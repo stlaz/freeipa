@@ -17,8 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import icalendar
+from datetime import date
 from ipalib import api, errors
-from ipalib import AccessTime, Str, StrEnum, Bool, DeprecatedParam
+from ipalib import Str, StrEnum, Bool, File, DeprecatedParam
 from ipalib.plugable import Registry
 from ipalib.plugins.baseldap import (
     pkey_to_value,
@@ -31,10 +33,14 @@ from ipalib.plugins.baseldap import (
     LDAPSearch,
     LDAPQuery,
     LDAPAddMember,
-    LDAPRemoveMember)
+    LDAPRemoveMember,
+    LDAPAddAttribute,
+    LDAPRemoveAttribute)
 from ipalib import _, ngettext
 from ipalib import output
 from ipapython.dn import DN
+from ipapython.ipa_log_manager import root_logger
+
 
 __doc__ = _("""
 Host-based access control
@@ -99,6 +105,126 @@ register = Registry()
 # Specify that the rule "test1" be active once, from 10:32 until 10:33 on
 # December 16, 2010:
 #   ipa hbacrule-add-accesstime --time='absolute 201012161032 ~ 201012161033' test1
+
+
+def validate_ical_component(comp, name):
+    if comp.errors:
+        ical_errors = ('{prop}: {err}'
+                       .format(prop=prop, err=e) for prop, e in comp.errors)
+        raise errors.ValidationError(
+            name=name,
+            error=_('There were errors parsing the iCalendar string:\n%(errs)s'
+                    ) % {'errs': '\n'.join(ical_errors)}
+            )
+
+    for prop in comp.required:
+        if prop not in comp.keys():
+            raise errors.ValidationError(
+                name=name,
+                error=_('A required property "%(prop)s" not found '
+                        'in "%(comp)s".') % {'prop': prop, 'comp': comp.name}
+                )
+
+    for prop in comp.keys():
+        # TODO: comp.required might be removed when
+        # https://github.com/collective/icalendar/pull/183 is merged
+        if prop not in (comp.singletons + comp.multiple + comp.required):
+            raise errors.ValidationError(
+                name=name,
+                error=_('A "%(comp)s" component can\'t contain '
+                        'property "%(prop)s".'
+                        ) % {'comp': comp.name, 'prop': prop}
+                )
+
+        if (prop in comp.singletons and isinstance(comp[prop], list)
+                and len(comp[prop]) > 1):
+            raise errors.ValidationError(
+                name=name,
+                error=_('A "%(comp)s" component can\'t have more than '
+                        'one "%(prop)s" property."'
+                        ) % {'comp': comp.name, 'prop': prop}
+                )
+
+
+def validate_icalfile(ugettext, ics):
+    name = 'accesstime'
+
+    try:
+        vcal = icalendar.cal.Calendar().from_ical(ics)
+    except ValueError as e:
+        raise errors.ValidationError(
+            name=name,
+            error=_('Couln\'t parse iCalendar string: %s'
+                    ) % (e, )
+            )
+
+    if(vcal.name != 'VCALENDAR'):  # pylint: disable=no-member
+        raise errors.ValidationError(
+            name=name,
+            error=_('Received object is not a VCALENDAR')
+            )
+
+    validate_ical_component(vcal, name)
+
+    # get a list of all components of a VCALENDAR
+    for comp in vcal.subcomponents:  # pylint: disable=no-member
+        if comp.name != 'VEVENT':
+            root_logger.info(
+                'Found "{comp}" but only VEVENT component is supported.'
+                .format(comp=comp.name))
+            continue
+
+        validate_ical_component(comp, name)
+        for sub in comp.subcomponents:
+            if sub.name != 'VALARM':
+                raise errors.ValidationError(
+                    name=name,
+                    error=_('A VEVENT component can\'t contain '
+                            'subcomponent "%s".') % (sub.name, )
+                    )
+            else:
+                root_logger.info(
+                    'Found "{comp}" but only VEVENT component is '
+                    'supported.'
+                    .format(comp=sub.name))
+
+        # we WILL require DTSTART for VEVENTs
+        if 'DTSTART' not in comp.keys():
+            raise errors.ValidationError(
+                name=name,
+                error=_('DTSTART property is required in VEVENT.')
+                )
+
+        if 'DTEND' in comp.keys():
+            if 'DURATION' in comp.keys():
+                raise errors.ValidationError(
+                    name=name,
+                    error=_('Both DURATION and DTEND set in a VEVENT.')
+                )
+
+            if type(comp['DTSTART'].dt) != type(comp['DTEND'].dt):
+                raise errors.ValidationError(
+                    name=name,
+                    error=_('Different types of DTSTART and DTEND '
+                            'component in VEVENT.')
+                    )
+
+        elif 'DURATION' in comp.keys() and isinstance(comp['DTSTART'].dt, date):
+            """
+            python-icalendar represents DURATION as datetime.timedelta. This,
+            in some cases, blocks us from checking whether it was originally
+            set correctly.
+
+            Example: If DTSTART has value of type DATE, DURATION should be set
+            only as dur-day or dur-week. However, DURATION:PT24H will evaluate
+            as timedelta(1)
+            """
+            if comp['DURATION'].dt.seconds:
+                raise errors.ValidationError(
+                    name=name,
+                    error=_('DURATION is not of type dur-day or dur-week '
+                            'when DTSTART value type is DATE.')
+                    )
 
 
 topic = ('hbac', _('Host-based access control commands'))
@@ -237,10 +363,10 @@ class hbacrule(LDAPObject):
             doc=_('Service category the rule applies to'),
             values=(u'all', ),
         ),
-#        AccessTime('accesstime?',
-#            cli_name='time',
-#            label=_('Access time'),
-#        ),
+        File('accesstime*', validate_icalfile,
+             cli_name='time',
+             label=_('Access time'),
+        ),
         Str('description?',
             cli_name='desc',
             label=_('Description'),
@@ -410,86 +536,18 @@ class hbacrule_disable(LDAPQuery):
         )
 
 
-
-class hbacrule_add_accesstime(LDAPQuery):
-    """
-    Add an access time to an HBAC rule.
-    """
-
-    takes_options = (
-        AccessTime('accesstime',
-            cli_name='time',
-            label=_('Access time'),
-        ),
-    )
-
-    def execute(self, cn, **options):
-        ldap = self.obj.backend
-
-        dn = self.obj.get_dn(cn)
-
-        entry_attrs = ldap.get_entry(dn, ['accesstime'])
-        entry_attrs.setdefault('accesstime', []).append(
-            options['accesstime']
-        )
-        try:
-            ldap.update_entry(entry_attrs)
-        except errors.EmptyModlist:
-            pass
-        except errors.NotFound:
-            self.obj.handle_not_found(cn)
-
-        return dict(result=True)
-
-    def output_for_cli(self, textui, result, cn, **options):
-        textui.print_name(self.name)
-        textui.print_dashed(
-            'Added access time "%s" to HBAC rule "%s"' % (
-                options['accesstime'], cn
-            )
-        )
-
-#api.register(hbacrule_add_accesstime)
+@register()
+class hbacrule_add_accesstime(LDAPAddAttribute):
+    __doc__ = _('Add an access time to an HBAC rule.')
+    msg_summary = _('Added allowed access times to the rule "%(value)s"')
+    attribute = 'accesstime'
 
 
-class hbacrule_remove_accesstime(LDAPQuery):
-    """
-    Remove access time to HBAC rule.
-    """
-    takes_options = (
-        AccessTime('accesstime?',
-            cli_name='time',
-            label=_('Access time'),
-        ),
-    )
-
-    def execute(self, cn, **options):
-        ldap = self.obj.backend
-
-        dn = self.obj.get_dn(cn)
-
-        entry_attrs = ldap.get_entry(dn, ['accesstime'])
-        try:
-            entry_attrs.setdefault('accesstime', []).remove(
-                options['accesstime']
-            )
-            ldap.update_entry(entry_attrs)
-        except (ValueError, errors.EmptyModlist):
-            pass
-        except errors.NotFound:
-            self.obj.handle_not_found(cn)
-
-        return dict(result=True)
-
-    def output_for_cli(self, textui, result, cn, **options):
-        textui.print_name(self.name)
-        textui.print_dashed(
-            'Removed access time "%s" from HBAC rule "%s"' % (
-                options['accesstime'], cn
-            )
-        )
-
-#api.register(hbacrule_remove_accesstime)
+@register()
+class hbacrule_remove_accesstime(LDAPRemoveAttribute):
+    __doc__ = _('Remove access times from an HBAC Rule')
+    msg_summary = _('Removed access times from the rule "%(value)s"')
+    attribute = 'accesstime'
 
 
 @register()

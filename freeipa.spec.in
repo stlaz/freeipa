@@ -103,6 +103,7 @@ BuildRequires:  python-jwcrypto
 BuildRequires:  custodia
 BuildRequires:  libini_config-devel >= 1.2.0
 BuildRequires:  dbus-python
+BuildRequires:  python-icalendar >= 3.9.2
 
 # Build dependencies for unit tests
 BuildRequires:  libcmocka-devel
@@ -337,6 +338,7 @@ Requires: libsss_autofs
 Requires: autofs
 Requires: libnfsidmap
 Requires: nfs-utils
+Requires: python-icalendar >= 3.9.2
 Requires(post): policycoreutils
 
 Provides: %{alt_name}-client = %{version}
