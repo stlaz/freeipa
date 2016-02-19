@@ -298,6 +298,14 @@ dn: cn=sudorules,cn=sudo,dc=ipa,dc=example
 aci: (targetattr = "cmdcategory || cn || createtimestamp || description || entryusn || externalhost || externaluser || hostcategory || hostmask || ipaenabledflag || ipasudoopt || ipasudorunas || ipasudorunasextgroup || ipasudorunasextuser || ipasudorunasextusergroup || ipasudorunasgroup || ipasudorunasgroupcategory || ipasudorunasusercategory || ipauniqueid || member || memberallowcmd || memberdenycmd || memberhost || memberuser || modifytimestamp || objectclass || sudonotafter || sudonotbefore || sudoorder || usercategory")(targetfilter = "(objectclass=ipasudorule)")(version 3.0;acl "permission:System: Read Sudo Rules";allow (compare,read,search) userdn = "ldap:///all";)
 dn: dc=ipa,dc=example
 aci: (targetattr = "cn || createtimestamp || description || entryusn || modifytimestamp || objectclass || ou || sudocommand || sudohost || sudonotafter || sudonotbefore || sudooption || sudoorder || sudorunas || sudorunasgroup || sudorunasuser || sudouser")(target = "ldap:///ou=sudoers,dc=ipa,dc=example")(version 3.0;acl "permission:System: Read Sudoers compat tree";allow (compare,read,search) userdn = "ldap:///anyone";)
+dn: cn=timeruletemplates,dc=ipa,dc=example
+aci: (targetfilter = "(objectclass=costemplate)")(version 3.0;acl "permission:System: Add Time Rule Template";allow (add) groupdn = "ldap:///cn=System: Add Time Rule Template,cn=permissions,cn=pbac,dc=ipa,dc=example";)
+dn: cn=timeruletemplates,dc=ipa,dc=example
+aci: (targetfilter = "(objectclass=costemplate)")(version 3.0;acl "permission:System: Delete Time Rule Template";allow (delete) groupdn = "ldap:///cn=System: Delete Time Rule Template,cn=permissions,cn=pbac,dc=ipa,dc=example";)
+dn: cn=timeruletemplates,dc=ipa,dc=example
+aci: (targetattr = "accesstime")(targetfilter = "(objectclass=costemplate)")(version 3.0;acl "permission:System: Modify Time Rule Template";allow (write) groupdn = "ldap:///cn=System: Modify Time Rule Template,cn=permissions,cn=pbac,dc=ipa,dc=example";)
+dn: cn=timeruletemplates,dc=ipa,dc=example
+aci: (targetattr = "accesstime || cn || createtimestamp || entryusn || modifytimestamp || objectclass")(targetfilter = "(objectclass=costemplate)")(version 3.0;acl "permission:System: Read Time Rule Template";allow (compare,read,search) groupdn = "ldap:///cn=System: Read Time Rule Template,cn=permissions,cn=pbac,dc=ipa,dc=example";)
 dn: cn=trusts,dc=ipa,dc=example
 aci: (targetattr = "cn || createtimestamp || entryusn || ipantflatname || ipantsecurityidentifier || ipantsidblacklistincoming || ipantsidblacklistoutgoing || ipanttrustdirection || ipanttrusteddomainsid || ipanttrustpartner || modifytimestamp || objectclass")(version 3.0;acl "permission:System: Read Trust Information";allow (compare,read,search) userdn = "ldap:///all";)
 dn: cn=trusts,dc=ipa,dc=example

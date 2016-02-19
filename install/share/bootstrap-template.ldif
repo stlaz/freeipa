@@ -272,6 +272,22 @@ description: IPA server hosts
 cn: ipaservers
 ipaUniqueID: autogenerate
 
+dn: cn=timeruleTemplates,$SUFFIX
+changetype: add
+objectClass: top
+objectClass: nsContainer
+cn: timeruleTemplates
+
+dn: cn=cosTimerulesDef,cn=hbac,$SUFFIX
+changetype: add
+objectClass: top
+objectClass: ldapsubentry
+objectClass: cosSuperDefinition
+objectClass: cosClassicDefinition
+cosTemplateDn: cn=timeruleTemplates,$SUFFIX
+cosAttribute: accessTime default merge-schemes
+cosSpecifier: timeruleTemplate
+
 dn: cn=sshd,cn=hbacservices,cn=hbac,$SUFFIX
 changetype: add
 objectclass: ipahbacservice

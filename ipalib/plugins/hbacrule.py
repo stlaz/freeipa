@@ -227,6 +227,81 @@ def validate_icalfile(ugettext, ics):
                     )
 
 
+@register()
+class timeruletemplate(LDAPObject):
+    """
+    Timerule templates
+    """
+    container_dn = api.env.container_timerules
+    object_name = _('Time rule template')
+    object_name_plural = _('Time rule templates')
+    object_class = ['top', 'costemplate', 'extensibleobject']
+    permission_filter_objectclasses = ['costemplate']
+    default_attributes = ['cn', 'accesstime']
+    managed_permissions = {
+        'System: Read Time Rule Template': {
+            'replaces_global_anonymous_aci': True,
+            'ipapermright': {'read', 'search', 'compare'},
+            'ipapermdefaultattr': {
+                'cn', 'objectclass', 'accesstime'
+            },
+        },
+        'System: Add Time Rule Template': {
+            'ipapermright': {'add'},
+            'default_privileges': {'HBAC Administrator'},
+        },
+        'System: Delete Time Rule Template': {
+            'ipapermright': {'delete'},
+            'default_privileges': {'HBAC Administrator'},
+        },
+        'System: Modify Time Rule Template': {
+            'ipapermright': {'write'},
+            'ipapermdefaultattr': {'accesstime'},
+            'default_privileges': {'HBAC Administrator'},
+        },
+    }
+
+    takes_params = (
+        Str('cn', cli_name='name',
+            label=_('Template name'),
+            primary_key=True),
+        File('accesstime', validate_icalfile,
+             cli_name='time',
+             label=_('Access time'),
+             ),
+    )
+
+
+@register()
+class timeruletemplate_add(LDAPCreate):
+    __doc__ = _('Create new timerule template.')
+
+
+@register()
+class timeruletemplate_del(LDAPDelete):
+    __doc__ = _('Delete a timerule template.')
+
+    msg_summary = _('Deleted template "%(value)s"')
+
+
+@register()
+class timeruletemplate_mod(LDAPUpdate):
+    __doc__ = _('Modify a timerule template.')
+
+    msg_summary = _('Modified a template "%(value)s"')
+
+
+@register()
+class timeruletemplate_find(LDAPSearch):
+    __doc__ = _('Search for timerule templates.')
+
+    msg_summary = ngettext(
+        '%(count)d timerule template matched',
+        '%(count)d timerule templates matched',
+        0,
+    )
+
+
 topic = ('hbac', _('Host-based access control commands'))
 
 def validate_type(ugettext, type):
@@ -367,6 +442,9 @@ class hbacrule(LDAPObject):
              cli_name='time',
              label=_('Access time'),
         ),
+        Str('timeruletemplate*',
+            cli_name='timerule_template',
+            label=_('Template name')),
         Str('description?',
             cli_name='desc',
             label=_('Description'),
@@ -460,7 +538,6 @@ class hbacrule_mod(LDAPUpdate):
         return dn
 
 
-
 @register()
 class hbacrule_find(LDAPSearch):
     __doc__ = _('Search for HBAC rules.')
@@ -548,6 +625,30 @@ class hbacrule_remove_accesstime(LDAPRemoveAttribute):
     __doc__ = _('Remove access times from an HBAC Rule')
     msg_summary = _('Removed access times from the rule "%(value)s"')
     attribute = 'accesstime'
+
+
+@register()
+class hbacrule_add_accesstime_template(LDAPAddAttribute):
+    __doc__ = _('Add access time from a timerule template to an HBAC rule')
+    msg_summary = _('Added template to the rule "%(value)s"')
+    attribute = 'timeruletemplate'
+
+    def pre_callback(self, ldap, dn, *keys, **options):
+        assert isinstance(dn, DN)
+        try:
+            ldap.get_entry(DN(('cn', options['timeruletemplate'][0]),
+                              api.env.container_timerules))
+        except errors.NotFound:
+            raise errors.NotFound('cn={}'.format(options['timeruletemplate']))
+
+        return dn
+
+
+@register()
+class hbacrule_remove_accesstime_template(LDAPRemoveAttribute):
+    __doc__ = _('Remove access time template from an HBAC rule')
+    msg_summary = _('Removed template from the rule "%(value)s"')
+    attribute = 'timeruletemplate'
 
 
 @register()
