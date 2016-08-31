@@ -115,9 +115,8 @@ class hbacrule(LDAPObject):
     container_dn = api.env.container_hbac
     object_name = _('HBAC rule')
     object_name_plural = _('HBAC rules')
-    object_class = ['ipaassociation']
-    possible_objectclasses = ['ipahbacrule', 'ipahbacrulev2']
-    permission_filter_objectclasses = ['ipahbacrule', 'ipahbacrulev2']
+    object_class = ['ipaassociation', 'ipahbacrule']
+    permission_filter_objectclasses = ['ipahbacrule']
     default_attributes = [
         'cn', 'ipaenabledflag',
         'description', 'usercategory', 'hostcategory',
@@ -200,7 +199,7 @@ class hbacrule(LDAPObject):
             cli_name='type',
             doc=_('Rule type (allow)'),
             label=_('Rule type'),
-            values=(u'allow', u'deny'),
+            values=(u'allow', u'deny', u'allow_with_time'),
             default=u'allow',
             autofill=True,
             exclude='webui',
@@ -294,8 +293,6 @@ class hbacrule_add(LDAPCreate):
         assert isinstance(dn, DN)
         # HBAC rules are enabled by default
         entry_attrs['ipaenabledflag'] = 'TRUE'
-        # start as an old type HBAC
-        entry_attrs['objectclass'].append('ipahbacrule')
         return dn
 
 
@@ -347,17 +344,6 @@ class hbacrule_find(LDAPSearch):
     msg_summary = ngettext(
         '%(count)d HBAC rule matched', '%(count)d HBAC rules matched', 0
     )
-
-    def pre_callback(self, ldap, filter, attrs_list, base_dn,
-                     scope, *args, **options):
-        assert isinstance(base_dn, DN)
-        filters = [
-            ldap.make_filter({'objectclass': ['ipahbacrule', 'ipahbacrulev2']},
-                             rules=ldap.MATCH_ANY)
-        ]
-        filters.append(filter)
-        filter = ldap.combine_filters(filters, rules=ldap.MATCH_ALL)
-        return (filter, base_dn, scope)
 
 
 @register()
@@ -438,18 +424,18 @@ class hbacrule_add_timerule(LDAPAddMember):
         assert(isinstance(dn, DN))
 
         try:
-            entry_attrs = ldap.get_entry(dn, ['objectclass'])
+            entry_attrs = ldap.get_entry(dn, ['accessruletype'])
         except errors.NotFound:
             self.obj.handle_not_found(*args)
         objclass_updated = False
-        # ipaHBACRuleV2 objectclass marks new version HBAC rules with new
+        # allow_with_time type marks new version HBAC rules with new
         # capabilities such as time policies
-        if ('ipahbacrulev2' not in
-                (o.lower() for o in entry_attrs['objectclass'])):
-            entry_attrs['objectclass'] = [cls for cls in
-                                          entry_attrs['objectclass']
-                                          if cls != 'ipahbacrule']
-            entry_attrs['objectclass'].append('ipahbacrulev2')
+        if ('allow_with_time' not in
+                (o.lower() for o in entry_attrs['accessruletype'])):
+            entry_attrs['accessruletype'] = [t for t in
+                                             entry_attrs['accessruletype']
+                                             if t != 'allow']
+            entry_attrs['accessruletype'].append('allow_with_time')
             ldap.update_entry(entry_attrs)
             objclass_updated = True
 
@@ -460,10 +446,10 @@ class hbacrule_add_timerule(LDAPAddMember):
             if objclass_updated:
                 # there was an error adding time rule to an HBAC rule which was
                 # of old version before, switch it back to ipaHBACRule class
-                entry_attrs['objectclass'] = [cls for cls in
-                                              entry_attrs['objectclass']
-                                              if cls != 'ipahbacrulev2']
-                entry_attrs['objectclass'].append('ipahbacrule')
+                entry_attrs['accessruletype'] = [t for t in
+                                                 entry_attrs['accessruletype']
+                                                 if t != 'allow_with_time']
+                entry_attrs['accessruletype'].append('allow')
                 ldap.update_entry(entry_attrs)
             raise
         return result
@@ -484,15 +470,15 @@ class hbacrule_remove_timerule(LDAPRemoveMember):
         timerules = result['result'].get('membertimerule_timerule', [])
 
         ldap = self.obj.backend
-        entry_attrs = ldap.get_entry(dn, ['objectclass'])
-        if (not timerules and 'ipahbacrulev2' in
-           (o.lower() for o in entry_attrs['objectclass'])):
+        entry_attrs = ldap.get_entry(dn, ['accessruletype'])
+        if (not timerules and 'allow_with_time' in
+           (o.lower() for o in entry_attrs['accessruletype'])):
             # there are no more time rules left in the HBAC rule, switch
             # to old type rules
-            entry_attrs['objectclass'] = [cls for cls in
-                                          entry_attrs['objectclass']
-                                          if cls != 'ipahbacrulev2']
-            entry_attrs['objectclass'].append('ipahbacrule')
+            entry_attrs['accessruletype'] = [t for t in
+                                             entry_attrs['accessruletype']
+                                             if t != 'allow_with_time']
+            entry_attrs['accessruletype'].append('allow')
             ldap.update_entry(entry_attrs)
         return result
 

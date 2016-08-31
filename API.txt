@@ -1902,7 +1902,7 @@ output: PrimaryKey('value')
 command: hbacrule_add/1
 args: 1,14,3
 arg: Str('cn', cli_name='name')
-option: StrEnum('accessruletype', autofill=True, cli_name='type', default=u'allow', values=[u'allow', u'deny'])
+option: StrEnum('accessruletype', autofill=True, cli_name='type', default=u'allow', values=[u'allow', u'deny', u'allow_with_time'])
 option: Str('addattr*', cli_name='addattr')
 option: Flag('all', autofill=True, cli_name='all', default=False)
 option: Str('description?', cli_name='desc')
@@ -2003,7 +2003,7 @@ output: PrimaryKey('value')
 command: hbacrule_find/1
 args: 1,16,4
 arg: Str('criteria?')
-option: StrEnum('accessruletype?', autofill=False, cli_name='type', default=u'allow', values=[u'allow', u'deny'])
+option: StrEnum('accessruletype?', autofill=False, cli_name='type', default=u'allow', values=[u'allow', u'deny', u'allow_with_time'])
 option: Flag('all', autofill=True, cli_name='all', default=False)
 option: Str('cn?', autofill=False, cli_name='name')
 option: Str('description?', autofill=False, cli_name='desc')
@@ -2026,7 +2026,7 @@ output: Output('truncated', type=[<type 'bool'>])
 command: hbacrule_mod/1
 args: 1,16,3
 arg: Str('cn', cli_name='name')
-option: StrEnum('accessruletype?', autofill=False, cli_name='type', default=u'allow', values=[u'allow', u'deny'])
+option: StrEnum('accessruletype?', autofill=False, cli_name='type', default=u'allow', values=[u'allow', u'deny', u'allow_with_time'])
 option: Str('addattr*', cli_name='addattr')
 option: Flag('all', autofill=True, cli_name='all', default=False)
 option: Str('delattr*', cli_name='delattr')
