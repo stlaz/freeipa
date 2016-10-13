@@ -667,6 +667,11 @@ class DsInstance(service.Service):
         conn.unbind()
 
     def apply_updates(self):
+        # Close admin connection, restart will occur during the upgrade but
+        # the connection object would stay. This would make connection checks
+        # say there's a connection but trying to use it would raise an error
+        if self.admin_conn:
+            self.ldap_disconnect()
         schema_files = get_all_external_schema_files(paths.EXTERNAL_SCHEMA_DIR)
         data_upgrade = upgradeinstance.IPAUpgrade(self.realm,
                                                   schema_files=schema_files)
