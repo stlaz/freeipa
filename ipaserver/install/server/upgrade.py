@@ -1649,7 +1649,6 @@ def upgrade_configuration():
 
     ds.ldap_connect()
     ds_enable_sidgen_extdom_plugins(ds)
-    ds.update_dna_shared_config()
     ds.ldap_disconnect()
 
     # Now 389-ds is available, run the remaining http tasks
