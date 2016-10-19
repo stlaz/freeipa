@@ -31,9 +31,9 @@ from six.moves.urllib.parse import urlparse, urlunparse
 
 from ipaclient import (
     ipadiscovery,
-    ipachangeconf,
     ntpconf,
 )
+from ipaclient.ipachangeconf import IPAChangeConf
 from ipalib import (
     api,
     certstore,
@@ -264,7 +264,7 @@ def configure_nsswitch_database(fstore, database, services, preserve=True,
     if not fstore.has_file(paths.NSSWITCH_CONF):
         fstore.backup_file(paths.NSSWITCH_CONF)
 
-    conf = ipachangeconf.IPAChangeConf("IPA Installer")
+    conf = IPAChangeConf("IPA Installer")
     conf.setOptionAssignment(':')
 
     if preserve:
@@ -316,7 +316,7 @@ def configure_nsswitch_database(fstore, database, services, preserve=True,
 
 def configure_ipa_conf(
         fstore, cli_basedn, cli_realm, cli_domain, cli_server, hostname):
-    ipaconf = ipachangeconf.IPAChangeConf("IPA Installer")
+    ipaconf = IPAChangeConf("IPA Installer")
     ipaconf.setOptionAssignment(" = ")
     ipaconf.setSectionNameDelimiters(("[", "]"))
 
@@ -406,7 +406,7 @@ def disable_ra():
 def configure_ldap_conf(
         fstore, cli_basedn, cli_realm, cli_domain, cli_server, dnsok, options,
         files):
-    ldapconf = ipachangeconf.IPAChangeConf("IPA Installer")
+    ldapconf = IPAChangeConf("IPA Installer")
     ldapconf.setOptionAssignment(" ")
 
     opts = [
@@ -536,7 +536,7 @@ def configure_ldap_conf(
 def configure_nslcd_conf(
         fstore, cli_basedn, cli_realm, cli_domain, cli_server, dnsok, options,
         files):
-    nslcdconf = ipachangeconf.IPAChangeConf("IPA Installer")
+    nslcdconf = IPAChangeConf("IPA Installer")
     nslcdconf.setOptionAssignment(" ")
 
     opts = [
@@ -643,7 +643,7 @@ def configure_nslcd_conf(
 
 
 def configure_openldap_conf(fstore, cli_basedn, cli_server):
-    ldapconf = ipachangeconf.IPAChangeConf("IPA Installer")
+    ldapconf = IPAChangeConf("IPA Installer")
     ldapconf.setOptionAssignment((" ", "\t"))
 
     opts = [
@@ -756,7 +756,7 @@ def hardcode_ldap_server(cli_server):
     if not file_exists(paths.LDAP_CONF):
         return
 
-    ldapconf = ipachangeconf.IPAChangeConf("IPA Installer")
+    ldapconf = IPAChangeConf("IPA Installer")
     ldapconf.setOptionAssignment(" ")
 
     opts = [
@@ -783,7 +783,7 @@ def configure_krb5_conf(
         cli_realm, cli_domain, cli_server, cli_kdc, dnsok,
         options, filename, client_domain, client_hostname):
 
-    krbconf = ipachangeconf.IPAChangeConf("IPA Installer")
+    krbconf = IPAChangeConf("IPA Installer")
     krbconf.setOptionAssignment((" = ", " "))
     krbconf.setSectionNameDelimiters(("[", "]"))
     krbconf.setSubSectionDelimiters(("{", "}"))
