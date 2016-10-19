@@ -35,6 +35,7 @@ ipasetup(
     package_dir={'ipaclient': ''},
     packages=[
         "ipaclient",
+        "ipaclient.install",
         "ipaclient.plugins",
         "ipaclient.remote_plugins",
         "ipaclient.remote_plugins.2_49",
