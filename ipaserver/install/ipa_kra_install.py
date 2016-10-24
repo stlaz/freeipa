@@ -189,7 +189,7 @@ class KRAInstaller(KRAInstall):
         if self.installing_replica:
             if self.options.promote:
                 config = ReplicaConfig()
-                config.master_host_name = None
+                config.kra_host_name = None
                 config.realm_name = api.env.realm
                 config.host_name = api.env.host
                 config.domain_name = api.env.domain
@@ -202,17 +202,15 @@ class KRAInstaller(KRAInstall):
                     self.options.password,
                     self.replica_file,
                     self.options)
+                config.kra_host_name = config.master_host_name
 
             if config.subject_base is None:
                 attrs = conn.get_ipa_config()
                 config.subject_base = attrs.get('ipacertificatesubjectbase')[0]
 
-            if config.master_host_name is None:
+            if config.kra_host_name is None:
                 config.kra_host_name = \
                     service.find_providing_server('KRA', conn, api.env.ca_host)
-                config.master_host_name = config.kra_host_name
-            else:
-                config.kra_host_name = config.master_host_name
 
         try:
             kra.install_check(api, config, self.options)
