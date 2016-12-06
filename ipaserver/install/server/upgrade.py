@@ -1551,6 +1551,11 @@ def upgrade_configuration():
             api.env.realm, paths.IPA_RADB_DIR, host_name=api.env.host)
     ca_running = ca.is_running()
 
+    # create passswd.txt file in PKI_TOMCAT_ALIAS_DIR if it does not exist
+    # this file will be required on most actions over this NSS DB in FIPS
+    if not os.path.exists(paths.PKI_TOMCAT_ALIAS_DIR, 'pwdfile.txt'):
+        ca.create_certstore_passwdfile()
+
     with installutils.stopped_service('pki-tomcatd', 'pki-tomcat'):
         # Dogtag must be stopped to be able to backup CS.cfg config
         ca.backup_config()
