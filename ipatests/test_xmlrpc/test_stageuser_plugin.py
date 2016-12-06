@@ -71,7 +71,7 @@ options_def = OrderedDict([
     ('user ID number', {u'uidnumber': uid}),
     ('group ID number', {u'gidnumber': gid}),
     ('UID and GID numbers', {u'uidnumber': uid, u'gidnumber': gid}),
-    ('password', {u'userpassword': u'Secret123'}),
+    ('password', {u'userpassword': u'Secret.123'}),
     ('random password', {u'random': True}),
     ])
 

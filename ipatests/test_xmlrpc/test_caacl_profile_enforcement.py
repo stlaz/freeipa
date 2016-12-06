@@ -38,8 +38,8 @@ SMIME_MOD_CONSTR_PROFILE_TEMPLATE = os.path.join(BASE_DIR, 'data/smime-mod.cfg.t
 CERT_OPENSSL_CONFIG_TEMPLATE = os.path.join(BASE_DIR, 'data/usercert.conf.tmpl')
 CERT_RSA_PRIVATE_KEY_PATH = os.path.join(BASE_DIR, 'data/usercert-priv-key.pem')
 
-SMIME_USER_INIT_PW = u'Change123'
-SMIME_USER_PW = u'Secret123'
+SMIME_USER_INIT_PW = u'Change.123'
+SMIME_USER_PW = u'Secret.123'
 
 
 def generate_user_csr(username, domain=None):

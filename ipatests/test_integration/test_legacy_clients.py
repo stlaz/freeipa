@@ -179,7 +179,7 @@ class BaseTestLegacyClient(object):
 
         testuser = 'testuser@%s' % self.ad.domain.name
         result = self.master.run_command(
-            'sshpass -p Secret123 '
+            'sshpass -p Secret.123 '
             'ssh '
             '-o StrictHostKeyChecking=no '
             '-l %s '
@@ -216,7 +216,7 @@ class BaseTestLegacyClient(object):
 
         testuser = 'disabledaduser@%s' % self.ad.domain.name
         result = self.master.run_command(
-            'sshpass -p Secret123 '
+            'sshpass -p Secret.123 '
             'ssh '
             '-o StrictHostKeyChecking=no '
             '-l %s '
@@ -295,7 +295,7 @@ class BaseTestLegacyClient(object):
 
         testuser = 'subdomaintestuser@%s' % self.ad_subdomain
         result = self.master.run_command(
-            'sshpass -p Secret123 '
+            'sshpass -p Secret.123 '
             'ssh '
             '-o StrictHostKeyChecking=no '
             '-l %s '
@@ -315,7 +315,7 @@ class BaseTestLegacyClient(object):
 
         testuser = 'subdomaindisabledaduser@%s' % self.ad_subdomain
         result = self.master.run_command(
-            'sshpass -p Secret123 '
+            'sshpass -p Secret.123 '
             'ssh '
             '-o StrictHostKeyChecking=no '
             '-l %s '

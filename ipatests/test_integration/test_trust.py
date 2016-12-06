@@ -180,8 +180,8 @@ class TestBasicADTrust(ADTrustBase):
 
     def test_ipauser_authentication(self):
         ipauser = u'tuser'
-        original_passwd = 'Secret123'
-        new_passwd = 'userPasswd123'
+        original_passwd = 'Secret.123'
+        new_passwd = 'userPasswd.123'
 
         # create an ipauser for this test
         self.master.run_command(['ipa', 'user-add', ipauser, '--first=Test',
@@ -461,7 +461,7 @@ class TestTrustWithUPN(ADTrustBase):
     upn_username = 'upnuser'
     upn_name = 'UPN User'
     upn_principal = '{}@{}'.format(upn_username, upn_suffix)
-    upn_password = 'Secret123456'
+    upn_password = 'Secret.123456'
 
     def test_upn_in_nonposix_trust(self):
         """ Check that UPN is listed as trust attribute """

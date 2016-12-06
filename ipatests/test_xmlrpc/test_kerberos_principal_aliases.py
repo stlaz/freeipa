@@ -197,7 +197,7 @@ class TestKerberosAliasManipulation(XMLRPC_test):
 
         krbalias_user.add_principal(alias)
 
-        oldpw, newpw = u"Secret1234", u"Secret123"
+        oldpw, newpw = u"Secret.1234", u"Secret.123"
 
         pwdmod = krbalias_user.make_update_command({'userpassword': oldpw})
         pwdmod()

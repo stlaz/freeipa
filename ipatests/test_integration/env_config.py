@@ -49,7 +49,7 @@ _setting_infos = (
     _SettingInfo('ssh_password', 'IPA_ROOT_SSH_PASSWORD', None),
 
     _SettingInfo('admin_name', 'ADMINID', 'admin'),
-    _SettingInfo('admin_password', 'ADMINPW', 'Secret123'),
+    _SettingInfo('admin_password', 'ADMINPW', 'Secret.123'),
     _SettingInfo('dirman_dn', 'ROOTDN', 'cn=Directory Manager'),
     _SettingInfo('dirman_password', 'ROOTDNPWD', None),
 
@@ -58,7 +58,7 @@ _setting_infos = (
     _SettingInfo('nis_domain', 'NISDOMAIN', 'ipatest'),
     _SettingInfo('ntp_server', 'NTPSERVER', None),
     _SettingInfo('ad_admin_name', 'ADADMINID', 'Administrator'),
-    _SettingInfo('ad_admin_password', 'ADADMINPW', 'Secret123'),
+    _SettingInfo('ad_admin_password', 'ADADMINPW', 'Secret.123'),
 
     _SettingInfo('ipv6', 'IPv6SETUP', False),
     _SettingInfo('debug', 'IPADEBUG', False),

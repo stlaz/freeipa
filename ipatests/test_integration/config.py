@@ -47,7 +47,7 @@ class Config(pytest_multihost.config.Config):
         kwargs.setdefault('test_dir', '/root/ipatests')
         super(Config, self).__init__(**kwargs)
 
-        admin_password = kwargs.get('admin_password') or 'Secret123'
+        admin_password = kwargs.get('admin_password') or 'Secret.123'
 
         self.admin_name = kwargs.get('admin_name') or 'admin'
         self.admin_password = admin_password
@@ -57,7 +57,7 @@ class Config(pytest_multihost.config.Config):
         self.ntp_server = str(kwargs.get('ntp_server') or (
             '%s.pool.ntp.org' % random.randint(0, 3)))
         self.ad_admin_name = kwargs.get('ad_admin_name') or 'Administrator'
-        self.ad_admin_password = kwargs.get('ad_admin_password') or 'Secret123'
+        self.ad_admin_password = kwargs.get('ad_admin_password') or 'Secret.123'
         self.domain_level = kwargs.get('domain_level', MAX_DOMAIN_LEVEL)
         # 8.8.8.8 is probably the best-known public DNS
         self.dns_forwarder = kwargs.get('dns_forwarder') or '8.8.8.8'
