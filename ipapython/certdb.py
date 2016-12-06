@@ -83,7 +83,8 @@ class NSSDatabase(object):
     # got too tied to IPA server details, killing reusability.
     # BaseCertDB is a class that knows nothing about IPA.
     # Generic NSS DB code should be moved here.
-    def __init__(self, nssdir=None):
+    def __init__(self, nssdir=None, password_filename=None):
+        self.password_filename = password_filename
         if nssdir is None:
             self.secdir = tempfile.mkdtemp()
             self._is_temporary = True
@@ -104,6 +105,8 @@ class NSSDatabase(object):
     def run_certutil(self, args, stdin=None, **kwargs):
         new_args = [CERTUTIL, "-d", self.secdir]
         new_args = new_args + args
+        if self.password_filename is not None:
+            new_args.extend(['-f', self.password_filename])
         return ipautil.run(new_args, stdin, **kwargs)
 
     def create_db(self, password_filename):
@@ -111,7 +114,9 @@ class NSSDatabase(object):
 
         :param password_filename: Name of file containing the database password
         """
-        self.run_certutil(["-N", "-f", password_filename])
+        # run_certutil will use self.password_filename to setup the db
+        self.password_filename = password_filename
+        self.run_certutil(["-N"])
 
     def list_certs(self):
         """Return nicknames and cert flags for all certs in the database
