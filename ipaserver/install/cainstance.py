@@ -534,6 +534,8 @@ class CAInstance(DogtagInstance):
 
         # CA key algorithm
         config.set("CA", "pki_ca_signing_key_algorithm", self.ca_signing_algorithm)
+        # workaround for weak pkispawn-generated nssdb password
+        config.set("CA", "pki_pin", "dummy_bullcrap01")
 
         if self.clone:
 

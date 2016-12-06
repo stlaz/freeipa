@@ -230,6 +230,9 @@ class KRAInstance(DogtagInstance):
         config.set(
             "KRA", "pki_share_dbuser_dn",
             str(DN(('uid', 'pkidbuser'), ('ou', 'people'), ('o', 'ipaca'))))
+        # workaround for weak pkispawn-generated nssdb password
+        config.set("KRA", "pki_pin", "dummy_bullcrap01")
+
 
         _p12_tmpfile_handle, p12_tmpfile_name = tempfile.mkstemp(dir=paths.TMP)
 
