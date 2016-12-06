@@ -527,10 +527,6 @@ def check_remote_version(api):
 
 
 def common_check(no_ntp):
-    if tasks.is_fips_enabled():
-        raise RuntimeError(
-            "Installing IPA server in FIPS mode is not supported")
-
     tasks.check_selinux_status()
 
     if is_ipa_configured():
