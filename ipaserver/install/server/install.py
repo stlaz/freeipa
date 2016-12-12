@@ -54,6 +54,22 @@ NoneType = type(None)
 SYSRESTORE_DIR_PATH = paths.SYSRESTORE
 
 
+def check_password_fips_nssdb_compatible(password):
+    """
+    Check whether the given password can be used for NSSDB setup in FIPS mode
+    """
+    gotnumeric = any(c.isdigit() for c in password[:-1])
+    gotupper = any(c.isupper() for c in password[1:])
+    gotlower = any(c.islower() for c in password)
+    gotspecial = any(not (c.isdigit() or c.isalpha()) for c in password)
+    classes = sum([gotnumeric, gotupper, gotlower, gotspecial])
+    if classes < 3:
+        raise ValueError("Password must contain at least one character "
+                         "from each of three out of these four character "
+                         "classes: numeric, uppercase letters, lowercase "
+                         "letters and special symbols.")
+
+
 def validate_dm_password(password):
     if len(password) < 8:
         raise ValueError("Password must be at least 8 characters long")
@@ -78,6 +94,9 @@ def validate_dm_password(password):
     if password.strip() != password:
         raise ValueError('Password must not start or end with whitespace.')
 
+    if tasks.is_fips_enabled():
+        check_password_fips_nssdb_compatible(password)
+
 
 def validate_admin_password(password):
     if len(password) < 8:
@@ -92,6 +111,9 @@ def validate_admin_password(password):
     if any(c in bad_characters for c in password):
         raise ValueError('Password must not contain these characters: %s' %
                          ', '.join('"%s"' % c for c in bad_characters))
+    # TODO: we may not need this here
+    if tasks.is_fips_enabled():
+        check_password_fips_nssdb_compatible(password)
 
 
 def read_cache(dm_password):
