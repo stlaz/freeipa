@@ -493,6 +493,9 @@ class Env(object):
         if 'nss_dir' not in self:
             self.nss_dir = self._join('confdir', 'nssdb')
 
+        if 'ca_certfile' not in self:
+            self.ca_certfile = self._join('confdir', 'ca.crt')
+
         # Set plugins_on_demand:
         if 'plugins_on_demand' not in self:
             self.plugins_on_demand = (self.context == 'cli')

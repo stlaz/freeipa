@@ -33,6 +33,7 @@ import decimal
 import dns
 import encodings
 import sys
+import ssl
 from weakref import WeakKeyDictionary
 
 import netaddr
@@ -42,6 +43,12 @@ from dns.resolver import NXDOMAIN
 from netaddr.core import AddrFormatError
 import six
 
+try:
+    from httplib import HTTPSConnection
+except ImportError:
+    # Python 3
+    from http.client import HTTPSConnection
+
 from ipalib import errors, messages
 from ipalib.constants import DOMAIN_LEVEL_0
 from ipalib.text import _
@@ -50,6 +57,7 @@ from ipapython.dn import DN, RDN
 from ipapython.dnsutil import DNSName
 from ipapython.dnsutil import resolve_ip_addresses
 from ipapython.ipa_log_manager import root_logger
+
 
 if six.PY3:
     unicode = str
@@ -185,6 +193,104 @@ def normalize_zone(zone):
         return zone + '.'
     else:
         return zone
+
+
+class IPAHTTPSConnection(HTTPSConnection, object):
+    """
+    This class inherits from `object` because HTTPSConnection does not in
+    Python 2.7. This is to allow the use of super() in its and derived
+    classes' methods.
+    """
+
+    # pylint: disable=no-member
+    tls_cutoff_map = {
+        "ssl2": ssl.OP_NO_SSLv2,
+        "tls1.0": ssl.OP_NO_TLSv1,
+        "tls1.1": ssl.OP_NO_TLSv1_1,
+        "tls1.2": ssl.OP_NO_TLSv1_2,
+    }
+    # pylint: enable=no-member
+
+    def __init__(self, host, port=HTTPSConnection.default_port,
+                 cafile=None,
+                 client_certfile=None, client_keyfile=None,
+                 keyfile_passwd=None,
+                 tls_version_min="tls1.1",
+                 tls_version_max="tls1.2",
+                 **kwargs):
+        """
+        Set up a client HTTPS connection.
+
+        :param host:  The host to connect to
+        :param port:  The port to connect to, defaults to
+                   HTTPSConnection.default_port
+        :param cafile:  A PEM-format file containning the trusted
+                        CA certificates
+        :param client_certfile:
+                A PEM-format client certificate file that will be used to
+                identificate the user to the server.
+        :param client_keyfile:
+                A file with the client private key. If this argument is not
+                supplied, the key will be sought in client_certfile.
+        :param keyfile_passwd:
+                A path to the file which stores the password that is used to
+                encrypt client_keyfile. Leave default value if the keyfile
+                is not encrypted.
+        :returns An established HTTPS connection to host:port
+        """
+        if cafile is None:
+            raise RuntimeError("IPAHTTPSConnection requires cafile argument "
+                               "to perform server certificate verification")
+
+        # pylint: disable=no-member
+        tls_cutoff = [
+            ssl.OP_NO_SSLv2,
+            ssl.OP_NO_TLSv1,
+            ssl.OP_NO_TLSv1_1,
+            ssl.OP_NO_TLSv1_2
+        ]
+        # remove the slice of negating protocol options according to options
+        min_idx = tls_cutoff.index(self.tls_cutoff_map[tls_version_min])
+        max_idx = tls_cutoff.index(self.tls_cutoff_map[tls_version_max])
+        tls_use = tls_cutoff[min_idx:max_idx+1]
+        del(tls_cutoff[min_idx:max_idx+1])
+
+        # official Python documentation states that the best option to get
+        # TLSv1 and later is to setup SSLContext with PROTOCOL_SSLv23
+        # and then negate the insecure SSLv2 and SSLv3
+        ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        ctx.options |= (
+            ssl.OP_ALL | ssl.OP_NO_COMPRESSION | ssl.OP_SINGLE_DH_USE |
+            ssl.OP_SINGLE_ECDH_USE | ssl.OP_NO_SSLv3
+        )
+
+        # high ciphers without RC4, MD5, TripleDES, pre-shared key
+        # and secure remote password
+        ctx.set_ciphers("HIGH:!aNULL:!eNULL:!MD5:!RC4:!3DES:!PSK:!SRP")
+
+        # pylint: enable=no-member
+        for version in tls_cutoff:
+            ctx.options |= version
+
+        # make sure the given TLS version is available if Python decides to
+        # remove it from default TLS flags
+        for version in tls_use:
+            ctx.options &= ~version
+
+        ctx.verify_mode = ssl.CERT_REQUIRED
+        ctx.check_hostname = True
+        ctx.load_verify_locations(cafile)
+
+        if client_certfile is not None:
+            if keyfile_passwd is not None:
+                with open(keyfile_passwd) as pwd_f:
+                    passwd = pwd_f.read()
+            else:
+                passwd = None
+            ctx.load_cert_chain(client_certfile, client_keyfile, passwd)
+
+        super(IPAHTTPSConnection, self).__init__(host, port, context=ctx,
+                                                 **kwargs)
 
 
 def validate_dns_label(dns_label, allow_underscore=False, allow_slash=False):
