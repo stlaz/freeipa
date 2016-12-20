@@ -2302,8 +2302,10 @@ def create_ipa_nssdb():
 
 
 def update_ipa_nssdb():
-    ipa_db = certdb.NSSDatabase(paths.IPA_NSSDB_DIR)
-    sys_db = certdb.NSSDatabase(paths.NSS_DB_DIR)
+    ipa_db = certdb.NSSDatabase(
+        paths.IPA_NSSDB_DIR, os.path.join(paths.IPA_NSSDB_DIR, 'pwdfile.txt'))
+    sys_db = certdb.NSSDatabase(
+        paths.NSS_DB_DIR, os.path.join(paths.NSS_DB_DIR, 'pwdfile.txt'))
 
     if not os.path.exists(os.path.join(ipa_db.secdir, 'cert8.db')):
         create_ipa_nssdb()
@@ -2760,7 +2762,8 @@ def _install(options):
 
     # Add the CA certificates to the IPA NSS database
     root_logger.debug("Adding CA certificates to the IPA NSS database.")
-    ipa_db = certdb.NSSDatabase(paths.IPA_NSSDB_DIR)
+    ipa_db = certdb.NSSDatabase(
+        paths.IPA_NSSDB_DIR, os.path.join(paths.IPA_NSSDB_DIR, 'pwdfile.txt'))
     for cert, nickname, trust_flags in ca_certs_trust:
         try:
             ipa_db.add_cert(cert, nickname, trust_flags)
