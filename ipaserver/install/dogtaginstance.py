@@ -73,11 +73,11 @@ def is_installing_replica(sys_type):
         return False
 
 
-def export_kra_agent_pem():
+def export_ra_agent_pem():
     """
     Export ipaCert with private key for client authentication.
     """
-    fd, filename = tempfile.mkstemp(dir=paths.HTTPD_ALIAS_DIR)
+    fd, filename = tempfile.mkstemp(dir=paths.VAR_LIB_IPA)
     os.close(fd)
 
     args = ["/usr/bin/pki",
@@ -91,7 +91,7 @@ def export_kra_agent_pem():
     os.chown(filename, 0, pent.pw_gid)
     os.chmod(filename, 0o440)
 
-    os.rename(filename, paths.KRA_AGENT_PEM)
+    os.rename(filename, paths.RA_AGENT_PEM)
 
 
 class DogtagInstance(service.Service):
