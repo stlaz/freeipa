@@ -31,7 +31,7 @@ from ipalib.util import (
 )
 import ipaclient.install.ntpconf
 from ipaserver.install import (
-    bindinstance, ca, cainstance, certs, dns, dsinstance,
+    bindinstance, ca, certs, dns, dsinstance,
     httpinstance, installutils, kra, krbinstance, memcacheinstance,
     ntpinstance, otpdinstance, custodiainstance, replication, service,
     sysupgrade)
@@ -777,10 +777,6 @@ def install(installer):
             write_cache(cache_vars)
 
         ca.install_step_0(False, None, options)
-
-        # Now put the CA cert where other instances exepct it
-        ca_instance = cainstance.CAInstance(realm_name, certs.NSS_DIR)
-        ca_instance.publish_ca_cert(paths.IPA_CA_CRT)
     else:
         # Put the CA cert where other instances expect it
         x509.write_certificate(http_ca_cert, paths.IPA_CA_CRT)
