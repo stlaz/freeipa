@@ -424,6 +424,8 @@ class CAInstance(DogtagInstance):
                 self.step("setting audit signing renewal to 2 years", self.set_audit_renewal)
                 self.step("restarting certificate server", self.restart_instance)
                 if not self.clone:
+                    self.step("publishing the CA certificate",
+                              lambda: self.publish_ca_cert(paths.IPA_CA_CRT))
                     self.step("adding RA agent as a trusted user", self.__create_ca_agent)
                 self.step("authorizing RA to modify profiles", configure_profiles_acl)
                 self.step("authorizing RA to manage lightweight CAs",
@@ -721,6 +723,10 @@ class CAInstance(DogtagInstance):
         conn.add_entry_to_group(user_dn, group_dn, 'uniqueMember')
 
         conn.disconnect()
+
+    def publish_ca_cert(self, location):
+        db = certs.CertDB(self.realm)
+        db.publish_ca_cert(location)
 
     def __run_certutil(self, args, database=None, pwd_file=None, stdin=None,
                        **kwargs):
