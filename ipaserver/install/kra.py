@@ -69,6 +69,8 @@ def install_check(api, replica_config, options):
 
 def install(api, replica_config, options):
     if replica_config is None:
+        if not options.setup_kra:
+            return
         realm_name = api.env.realm
         dm_password = options.dm_password
         host_name = api.env.host
@@ -76,7 +78,6 @@ def install(api, replica_config, options):
 
         pkcs12_info = None
         master_host = None
-        ra_only = not options.setup_kra
         promote = False
     else:
         krafile = os.path.join(replica_config.dir, 'kracert.p12')
@@ -96,6 +97,9 @@ def install(api, replica_config, options):
                     "  cacert.p12 file not found in replica file")
             shutil.copy(cafile, krafile)
 
+        if not replica_config.setup_kra:
+            return
+
         realm_name = replica_config.realm_name
         dm_password = replica_config.dirman_password
         host_name = replica_config.host_name
@@ -103,7 +107,6 @@ def install(api, replica_config, options):
 
         pkcs12_info = (krafile,)
         master_host = replica_config.kra_host_name
-        ra_only = not replica_config.setup_kra
         promote = options.promote
 
     kra = krainstance.KRAInstance(realm_name)
@@ -111,18 +114,15 @@ def install(api, replica_config, options):
                            subject_base=subject_base,
                            pkcs12_info=pkcs12_info,
                            master_host=master_host,
-                           ra_only=ra_only,
                            promote=promote)
 
     _service.print_msg("Restarting the directory server")
     ds = dsinstance.DsInstance()
     ds.restart()
+    kra.enable_client_auth_to_db(paths.KRA_CS_CFG_PATH)
 
-    if not ra_only:
-        kra.enable_client_auth_to_db(paths.KRA_CS_CFG_PATH)
-
-        # Restart apache for new proxy config file
-        services.knownservices.httpd.restart(capture_output=True)
+    # Restart apache for new proxy config file
+    services.knownservices.httpd.restart(capture_output=True)
 
 
 def uninstall(standalone):
