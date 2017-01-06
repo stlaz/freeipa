@@ -49,6 +49,7 @@ from ipalib import util
 from ipalib import output
 from ipapython import kerberos
 from ipapython.dn import DN
+from ipaplatform.tasks import tasks
 
 
 if six.PY3:
@@ -274,8 +275,12 @@ def set_certificate_attrs(entry_attrs):
     entry_attrs['valid_not_before'] = x509.format_datetime(
             cert.not_valid_before)
     entry_attrs['valid_not_after'] = x509.format_datetime(cert.not_valid_after)
-    entry_attrs['md5_fingerprint'] = x509.to_hex_with_colons(
-        cert.fingerprint(hashes.MD5()))
+    if not tasks.is_fips_enabled():
+        entry_attrs['md5_fingerprint'] = x509.to_hex_with_colons(
+            cert.fingerprint(hashes.MD5()))
+    else:
+        entry_attrs['md5_fingerprint'] = ('md5 fingerprints are disabled in '
+                                          'FIPS mode')
     entry_attrs['sha1_fingerprint'] = x509.to_hex_with_colons(
         cert.fingerprint(hashes.SHA1()))
 

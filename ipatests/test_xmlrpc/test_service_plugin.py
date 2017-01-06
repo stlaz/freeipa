@@ -22,7 +22,9 @@ Test the `ipaserver/plugins/service.py` module.
 """
 
 from ipalib import api, errors, x509
-from ipatests.test_xmlrpc.xmlrpc_test import Declarative, fuzzy_uuid, fuzzy_hash
+from ipatests.test_xmlrpc.xmlrpc_test import (
+    Declarative, fuzzy_uuid, fuzzy_hash, fuzzy_md5_hash
+)
 from ipatests.test_xmlrpc.xmlrpc_test import fuzzy_digits, fuzzy_date, fuzzy_issuer
 from ipatests.test_xmlrpc.xmlrpc_test import fuzzy_hex, XMLRPC_test
 from ipatests.test_xmlrpc import objectclasses
@@ -465,7 +467,7 @@ class test_service(Declarative):
                     subject=randomissuer,
                     serial_number=fuzzy_digits,
                     serial_number_hex=fuzzy_hex,
-                    md5_fingerprint=fuzzy_hash,
+                    md5_fingerprint=fuzzy_md5_hash,
                     sha1_fingerprint=fuzzy_hash,
                     issuer=fuzzy_issuer,
                 ),
@@ -488,7 +490,7 @@ class test_service(Declarative):
                     subject=DN(('CN',api.env.host),x509.subject_base()),
                     serial_number=fuzzy_digits,
                     serial_number_hex=fuzzy_hex,
-                    md5_fingerprint=fuzzy_hash,
+                    md5_fingerprint=fuzzy_md5_hash,
                     sha1_fingerprint=fuzzy_hash,
                     issuer=fuzzy_issuer,
                 ),
@@ -525,7 +527,7 @@ class test_service(Declarative):
                     subject=DN(('CN',api.env.host),x509.subject_base()),
                     serial_number=fuzzy_digits,
                     serial_number_hex=fuzzy_hex,
-                    md5_fingerprint=fuzzy_hash,
+                    md5_fingerprint=fuzzy_md5_hash,
                     sha1_fingerprint=fuzzy_hash,
                     issuer=fuzzy_issuer,
                 ),
@@ -554,7 +556,7 @@ class test_service(Declarative):
                     subject=DN(('CN',api.env.host),x509.subject_base()),
                     serial_number=fuzzy_digits,
                     serial_number_hex=fuzzy_hex,
-                    md5_fingerprint=fuzzy_hash,
+                    md5_fingerprint=fuzzy_md5_hash,
                     sha1_fingerprint=fuzzy_hash,
                     issuer=fuzzy_issuer,
                 ),
@@ -579,7 +581,7 @@ class test_service(Declarative):
                     subject=DN(('CN',api.env.host),x509.subject_base()),
                     serial_number=fuzzy_digits,
                     serial_number_hex=fuzzy_hex,
-                    md5_fingerprint=fuzzy_hash,
+                    md5_fingerprint=fuzzy_md5_hash,
                     sha1_fingerprint=fuzzy_hash,
                     issuer=fuzzy_issuer,
                     krbticketflags=[u'1048704'],
@@ -607,7 +609,7 @@ class test_service(Declarative):
                     subject=DN(('CN',api.env.host),x509.subject_base()),
                     serial_number=fuzzy_digits,
                     serial_number_hex=fuzzy_hex,
-                    md5_fingerprint=fuzzy_hash,
+                    md5_fingerprint=fuzzy_md5_hash,
                     sha1_fingerprint=fuzzy_hash,
                     issuer=fuzzy_issuer,
                     krbticketflags=[u'1048577'],
@@ -633,7 +635,7 @@ class test_service(Declarative):
                     subject=DN(('CN',api.env.host),x509.subject_base()),
                     serial_number=fuzzy_digits,
                     serial_number_hex=fuzzy_hex,
-                    md5_fingerprint=fuzzy_hash,
+                    md5_fingerprint=fuzzy_md5_hash,
                     sha1_fingerprint=fuzzy_hash,
                     issuer=fuzzy_issuer,
                     krbticketflags=[u'1'],

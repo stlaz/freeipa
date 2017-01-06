@@ -33,6 +33,7 @@ import six
 from ipatests.util import assert_deepequal, Fuzzy
 from ipalib import api, request, errors
 from ipapython.version import API_VERSION
+from ipaplatform.tasks import tasks
 
 
 # Matches a gidnumber like '1391016742'
@@ -105,6 +106,10 @@ fuzzy_ipauniqueid = Fuzzy('(?i)ipauniqueid=%s' % uuid_re)
 
 # Matches a hash signature, not enforcing length
 fuzzy_hash = Fuzzy('^([a-f0-9][a-f0-9]:)+[a-f0-9][a-f0-9]$', type=six.string_types)
+if not tasks.is_fips_enabled():
+    fuzzy_md5_hash = fuzzy_hash
+else:
+    fuzzy_md5_hash = 'md5 fingerprints are disabled in FIPS mode'
 
 # Matches a date, like Tue Apr 26 17:45:35 2016 UTC
 fuzzy_date = Fuzzy('^[a-zA-Z]{3} [a-zA-Z]{3} \d{2} \d{2}:\d{2}:\d{2} \d{4} UTC$')

@@ -35,8 +35,8 @@ from ipalib import api, errors, x509
 from ipapython.dn import DN
 from ipapython.dnsutil import DNSName
 from ipatests.test_xmlrpc.xmlrpc_test import (XMLRPC_test,
-    fuzzy_uuid, fuzzy_digits, fuzzy_hash, fuzzy_date, fuzzy_issuer,
-    fuzzy_hex, raises_exact)
+    fuzzy_uuid, fuzzy_digits, fuzzy_hash, fuzzy_md5_hash, fuzzy_date,
+    fuzzy_issuer, fuzzy_hex, raises_exact)
 from ipatests.test_xmlrpc.test_user_plugin import get_group_dn
 from ipatests.test_xmlrpc import objectclasses
 from ipatests.test_xmlrpc.tracker.host_plugin import HostTracker
@@ -232,7 +232,7 @@ class TestCRUD(XMLRPC_test):
                         description=[u'Updated host 1'],
                         usercertificate=[base64.b64decode(host_cert)],
                         issuer=fuzzy_issuer,
-                        md5_fingerprint=fuzzy_hash,
+                        md5_fingerprint=fuzzy_md5_hash,
                         serial_number=fuzzy_digits,
                         serial_number_hex=fuzzy_hex,
                         sha1_fingerprint=fuzzy_hash,
