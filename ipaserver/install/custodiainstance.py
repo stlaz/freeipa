@@ -2,12 +2,12 @@
 
 from ipaserver.secrets.kem import IPAKEMKeys
 from ipaserver.secrets.client import CustodiaClient
-from ipaserver.install.certs import CertDB
 from ipaplatform.paths import paths
 from ipaplatform.constants import constants
 from ipaserver.install.service import SimpleServiceInstance
 from ipapython import ipautil
 from ipapython.ipa_log_manager import root_logger
+from ipapython.certdb import NSSDatabase
 from ipaserver.install import installutils
 from ipaserver.install import ldapupdate
 from ipaserver.install import sysupgrade
@@ -163,7 +163,7 @@ class CustodiaInstance(SimpleServiceInstance):
                              '-w', pk12pwfile])
 
             # Add CA certificates
-            tmpdb = CertDB(self.realm, nssdir=tmpnssdir)
+            tmpdb = NSSDatabase(tmpnssdir, password_filename=nsspwfile)
             self.suffix = ipautil.realm_to_suffix(self.realm)
             self.import_ca_certs(tmpdb, True)
 

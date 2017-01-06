@@ -84,7 +84,6 @@ class CertDB(object):
     def __init__(
             self, realm, nssdir=NSS_DIR, fstore=None, host_name=None,
             subject_base=None, ca_subject=None):
-        self.nssdb = NSSDatabase(nssdir)
 
         self.secdir = nssdir
         self.realm = realm
@@ -98,6 +97,9 @@ class CertDB(object):
         self.pk12_fname = self.secdir + "/cacert.p12"
         self.pin_fname = self.secdir + "/pin.txt"
         self.pwd_conf = paths.HTTPD_PASSWORD_CONF
+        self.nssdb = NSSDatabase(
+            self.secdir, password_filename=self.passwd_fname)
+
         self.reqdir = None
         self.certreq_fname = None
         self.certder_fname = None
