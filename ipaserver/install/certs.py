@@ -43,6 +43,7 @@ from ipalib.errors import CertificateOperationError
 from ipalib.text import _
 from ipaplatform.constants import constants
 from ipaplatform.paths import paths
+from ipaplatform.tasks import tasks
 
 # Apache needs access to this database so we need to create it
 # where apache can reach
@@ -501,7 +502,11 @@ class CertDB(object):
         f = open(self.pwd_conf, "w")
         f.write("internal:")
         pwdfile = open(self.passwd_fname)
-        f.write(pwdfile.read())
+        password = pwdfile.read()
+        f.write(password)
+        if tasks.is_fips_enabled():
+            f.write("\nNSS FIPS 140-2 Certificate DB:")
+            f.write(password)
         f.close()
         pwdfile.close()
         self.set_perms(self.pwd_conf, uid=constants.HTTPD_USER)
