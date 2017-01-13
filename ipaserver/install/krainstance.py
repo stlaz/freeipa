@@ -30,7 +30,6 @@ from six.moves.configparser import ConfigParser
 from ipalib import api
 from ipalib import x509
 from ipaplatform.paths import paths
-from ipapython import certdb
 from ipapython import ipautil
 from ipapython.dn import DN
 from ipaserver.install import cainstance
@@ -39,6 +38,8 @@ from ipaserver.install import ldapupdate
 from ipaserver.install.dogtaginstance import DogtagInstance
 from ipaserver.plugins import ldap2
 from ipapython.ipa_log_manager import log_mgr
+
+from cryptography.hazmat.primitives import serialization
 
 # When IPA is installed with DNS support, this CNAME should hold all IPA
 # replicas with KRA configured
@@ -284,10 +285,9 @@ class KRAInstance(DogtagInstance):
         the appropriate groups for accessing KRA services.
         """
 
-        # get ipaCert certificate
-        with certdb.NSSDatabase(paths.IPA_RADB_DIR) as ipa_nssdb:
-           cert_data = ipa_nssdb.get_cert("ipaCert")
-        cert = x509.load_certificate(cert_data, x509.DER)
+        # get RA agent certificate
+        cert = x509.load_certificate_from_file(paths.RA_AGENT_PEM)
+        cert_data = cert.public_bytes(serialization.Encoding.DER)
 
         # connect to KRA database
         server_id = installutils.realm_to_serverid(api.env.realm)
@@ -295,7 +295,7 @@ class KRAInstance(DogtagInstance):
         conn = ldap2.ldap2(api, ldap_uri=dogtag_uri)
         conn.connect(autobind=True)
 
-        # create ipakra user with ipaCert certificate
+        # create ipakra user with RA agent certificate
         user_dn = DN(('uid', "ipakra"), ('ou', 'people'), self.basedn)
         entry = conn.make_entry(
             user_dn,

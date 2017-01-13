@@ -1241,9 +1241,13 @@ class RestClient(Backend):
         self.ca_cert = api.env.cacert_store
         if api.env.in_tree:
             self.client_certfile = os.path.join(
-                api.env.dot_ipa, 'ra-agent.pem')
+                api.env.dot_ipa, 'dogtag-agent.pem')
+
+            self.client_keyfile = os.path.join(
+                api.env.dot_ipa, 'dogtag-agent.key')
         else:
             self.client_certfile = paths.RA_AGENT_PEM
+            self.client_keyfile = paths.RA_AGENT_KEY
         super(RestClient, self).__init__(api)
 
         # session cookie
@@ -1277,7 +1281,8 @@ class RestClient(Backend):
         status, resp_headers, _resp_body = dogtag.https_request(
             self.ca_host, self.override_port or self.env.ca_agent_port,
             '/ca/rest/account/login', self.ca_cert,
-            self.client_certfile, 'GET'
+            self.client_certfile, self.client_keyfile,
+            'GET'
         )
         cookies = ipapython.cookie.Cookie.parse(resp_headers.get('set-cookie', ''))
         if status != 200 or len(cookies) == 0:
@@ -1290,7 +1295,8 @@ class RestClient(Backend):
         dogtag.https_request(
             self.ca_host, self.override_port or self.env.ca_agent_port,
             '/ca/rest/account/logout', self.ca_cert,
-            self.client_certfile, 'GET'
+            self.client_certfile, self.client_keyfile,
+            'GET'
         )
         self.cookie = None
 
@@ -1331,7 +1337,7 @@ class RestClient(Backend):
         status, resp_headers, resp_body = dogtag.https_request(
             self.ca_host, self.override_port or self.env.ca_agent_port,
             resource, self.ca_cert, self.client_certfile,
-            method, headers, body
+            self.client_keyfile, method, headers, body
         )
         if status < 200 or status >= 300:
             explanation = self._parse_dogtag_error(resp_body) or ''
@@ -1412,7 +1418,8 @@ class ra(rabase.rabase, RestClient):
         Perform an HTTPS request
         """
         return dogtag.https_request(self.ca_host, port, url, self.ca_cert,
-                                    self.client_certfile, **kw)
+                                    self.client_certfile, self.client_keyfile,
+                                    **kw)
 
     def get_parse_result_xml(self, xml_text, parse_func):
         '''
@@ -2012,7 +2019,8 @@ class kra(Backend):
             str(self.kra_port),
             'kra')
 
-        connection.set_authentication_cert(paths.RA_AGENT_PEM)
+        connection.set_authentication_cert(paths.RA_AGENT_PEM,
+                                           paths.RA_AGENT_KEY)
 
         return KRAClient(connection, crypto)
 

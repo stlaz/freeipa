@@ -400,7 +400,8 @@ class CertDB(object):
         # Send the request to the CA
         result = dogtag.https_request(
             self.host_name, 8443, "/ca/ee/ca/profileSubmitSSLClient",
-            api.env.cacert_store, paths.RA_AGENT_PEM, **params)
+            api.env.cacert_store, paths.RA_AGENT_PEM, paths.RA_AGENT_KEY,
+            **params)
         http_status, _http_headers, http_body = result
         root_logger.debug("CA answer: %s", http_body)
 
@@ -451,7 +452,8 @@ class CertDB(object):
         # Send the request to the CA
         result = dogtag.https_request(
             self.host_name, 8443, "/ca/ee/ca/profileSubmitSSLClient",
-            api.env.cacert_store, paths.RA_AGENT_PEM, **params)
+            api.env.cacert_store, paths.RA_AGENT_PEM, paths.RA_AGENT_KEY,
+            **params)
         http_status, _http_headers, http_body = result
         if http_status != 200:
             raise RuntimeError("Unable to submit cert request")

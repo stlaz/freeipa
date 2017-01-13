@@ -2,7 +2,6 @@
 # Copyright (C) 2016  FreeIPA Contributors see COPYING for license
 #
 
-import binascii
 import os
 
 from ipalib import Registry
@@ -54,18 +53,9 @@ class update_ra_cert_store(Updater):
                 self.log.warning("Failed to import '{}' from trust "
                                  "chain: {}".format(name, str(e)))
 
-        # As the last step export/import/delete the RA Cert
-        pw = binascii.hexlify(os.urandom(10))
-        p12file = os.path.join(paths.IPA_RADB_DIR, 'ipaCert.p12')
-        olddb.export_pkcs12('ipaCert', p12file, pw)
-        newdb.import_pkcs12(p12file, pw)
-
+        # As the last step delete the RA Cert
         certmonger.stop_tracking(secdir=olddb.secdir,
                                  nickname='ipaCert')
-        certmonger.start_tracking(secdir=newdb.secdir,
-                                  nickname='ipaCert',
-                                  password_file=newdb.pwd_file)
-
         olddb.delete_cert('ipaCert')
 
         return False, []

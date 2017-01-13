@@ -10,6 +10,7 @@ import shutil
 import pwd
 import fileinput
 import sys
+import tempfile
 
 import dns.exception
 
@@ -17,6 +18,10 @@ import six
 # pylint: disable=import-error
 from six.moves.configparser import SafeConfigParser
 # pylint: enable=import-error
+
+from cryptography import x509 as crypto_x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 
 from ipalib import api
 from ipalib.install import certmonger, sysrestore
@@ -880,77 +885,50 @@ def certificate_renewal_update(ca, ds, http):
 
     template = paths.CERTMONGER_COMMAND_TEMPLATE
     serverid = installutils.realm_to_serverid(api.env.realm)
-    dirsrv_dir = dsinstance.config_dirname(serverid)
 
     # bump version when requests is changed
     version = 6
-    requests = (
-        (
-            paths.PKI_TOMCAT_ALIAS_DIR,
-            'auditSigningCert cert-pki-ca',
-            'dogtag-ipa-ca-renew-agent',
-            template % 'stop_pkicad',
-            '%s "auditSigningCert cert-pki-ca"' % (template % 'renew_ca_cert'),
-            None,
-        ),
-        (
-            paths.PKI_TOMCAT_ALIAS_DIR,
-            'ocspSigningCert cert-pki-ca',
-            'dogtag-ipa-ca-renew-agent',
-            template % 'stop_pkicad',
-            '%s "ocspSigningCert cert-pki-ca"' % (template % 'renew_ca_cert'),
-            None,
-        ),
-        (
-            paths.PKI_TOMCAT_ALIAS_DIR,
-            'subsystemCert cert-pki-ca',
-            'dogtag-ipa-ca-renew-agent',
-            template % 'stop_pkicad',
-            '%s "subsystemCert cert-pki-ca"' % (template % 'renew_ca_cert'),
-            None,
-        ),
-        (
-            paths.PKI_TOMCAT_ALIAS_DIR,
-            'caSigningCert cert-pki-ca',
-            'dogtag-ipa-ca-renew-agent',
-            template % 'stop_pkicad',
-            '%s "caSigningCert cert-pki-ca"' % (template % 'renew_ca_cert'),
-            'ipaCACertRenewal',
-        ),
-        (
-            paths.IPA_RADB_DIR,
-            'ipaCert',
-            'dogtag-ipa-ca-renew-agent',
-            template % 'renew_ra_cert_pre',
-            template % 'renew_ra_cert',
-            None,
-        ),
-        (
-            paths.PKI_TOMCAT_ALIAS_DIR,
-            'Server-Cert cert-pki-ca',
-            'dogtag-ipa-ca-renew-agent',
-            template % 'stop_pkicad',
-            '%s "Server-Cert cert-pki-ca"' % (template % 'renew_ca_cert'),
-            None,
-        ),
-        (
-            paths.HTTPD_ALIAS_DIR,
-            'Server-Cert',
-            'IPA',
-            None,
-            template % 'restart_httpd',
-            None,
-        ),
-        (
-            dirsrv_dir,
-            'Server-Cert',
-            'IPA',
-            None,
-            '%s %s' % (template % 'restart_dirsrv', serverid),
-            None,
-        ),
-
-    )
+    requests = []
+    for certnick in ('auditSigningCert cert-pki-ca',
+                     'ocspSigningCert cert-pki-ca',
+                     'subsystemCert cert-pki-ca',
+                     'caSigningCert cert-pki-ca',
+                     'Server-Cert cert-pki-ca',
+                     ):
+        requests.append(
+            {
+                'cert-database': paths.PKI_TOMCAT_ALIAS_DIR,
+                'cert-nickname': certnick,
+                'ca': 'dogtag-ipa-ca-renew-agent',
+                'cert-presave-command': template % 'stop_pkicad',
+                'cert-postsave-command':
+                    (template % 'renew_ca_cert "{}"').format(certnick),
+            }
+        )
+    # set profile for caSigningCert
+    requests[3]['template-profile'] = 'ipaCACertRenewal'
+    requests.extend([
+        {
+            'cert-file': paths.RA_AGENT_PEM,
+            'key-file': paths.RA_AGENT_KEY,
+            'ca': 'dogtag-ipa-ca-renew-agent',
+            'cert-presave-command': template % 'renew_ra_cert_pre',
+            'cert-postsave-command': template % 'renew_ra_cert',
+        },
+        {
+            'cert-database': paths.HTTPD_ALIAS_DIR,
+            'cert-nickname': 'Server-Cert',
+            'ca': 'IPA',
+            'cert-postsave-command': template % 'restart_httpd',
+        },
+        {
+            'cert-database': dsinstance.config_dirname(serverid),
+            'cert-nickname': 'Server-Cert',
+            'ca': 'IPA',
+            'cert-postsave-command':
+                '%s %s' % (template % 'restart_dirsrv', serverid),
+        }
+    ])
 
     root_logger.info("[Update certmonger certificate renewal configuration to "
                      "version %d]" % version)
@@ -964,16 +942,7 @@ def certificate_renewal_update(ca, ds, http):
 
     # State not set, lets see if we are already configured
     for request in requests:
-        nss_dir, nickname, ca_name, pre_command, post_command, profile = request
-        criteria = {
-            'cert-database': nss_dir,
-            'cert-nickname': nickname,
-            'ca-name': ca_name,
-            'template-profile': profile,
-            'cert-presave-command': pre_command,
-            'cert-postsave-command': post_command,
-        }
-        request_id = certmonger.get_request_id(criteria)
+        request_id = certmonger.get_request_id(request)
         if request_id is None:
             break
     else:
@@ -1382,20 +1351,60 @@ def fix_trust_flags():
     sysupgrade.set_upgrade_state('http', 'fix_trust_flags', True)
 
 
-def export_ra_agent_pem():
-    root_logger.info('[Exporting KRA agent PEM file]')
-
-    if sysupgrade.get_upgrade_state('http', 'export_ra_agent_pem'):
-        root_logger.info("KRA agent PEM file already exported")
+def update_ra_agent_crt():
+    if os.path.exists(paths.RA_AGENT_PEM):
         return
 
-    if not api.Command.kra_is_enabled()['result']:
-        root_logger.info("KRA is not enabled")
+    root_logger.info('[Exporting RA agent PEM files]')
+    _fd, filename = tempfile.mkstemp(dir=paths.VAR_LIB_IPA)
+
+    if sysupgrade.get_upgrade_state('http', 'update_ra_agent_crt'):
+        root_logger.info("RA agent PEM files already exported")
         return
 
-    dogtaginstance.export_ra_agent_pem()
+    sysupgrade.set_upgrade_state('http', 'update_ra_agent_crt', True)
 
-    sysupgrade.set_upgrade_state('http', 'export_ra_agent_pem', True)
+    ra_nick = 'ipaCert'
+    args = [paths.PKI,
+            "-d", paths.HTTPD_ALIAS_DIR,
+            "-C", os.path.join(paths.HTTPD_ALIAS_DIR, 'pwdfile.txt'),
+            "client-cert-show", ra_nick,
+            "--client-cert", filename]
+    ipautil.run(args)
+
+    # get the private key and certificate from the file
+    with open(filename, 'r') as f:
+        data = f.read()
+        cert = crypto_x509.load_pem_x509_certificate(
+            data, default_backend())
+        key = serialization.load_pem_private_key(
+            data, password=None, backend=default_backend())
+
+    os.remove(filename)
+
+    with open(paths.RA_AGENT_PEM, 'w') as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+
+    with open(paths.RA_AGENT_KEY, 'w') as f:
+        f.write(key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+
+    pent = pwd.getpwnam(constants.HTTPD_USER)
+    for pem_file in (paths.RA_AGENT_PEM, paths.RA_AGENT_KEY):
+        os.chown(pem_file, 0, pent.pw_gid)
+        os.chmod(pem_file, 0o440)
+
+    if os.path.exists('/etc/httpd/alias/kra-agent.pem'):
+        os.remove('/etc/httpd/alias/kra-agent.pem')
+
+    httpdb = certs.CertDB(api.env.realm)
+    oldcert = httpdb.get_cert_from_db(ra_nick)
+    if oldcert:
+        certmonger.stop_tracking(paths.HTTPD_ALIAS_DIR, nickname=ra_nick)
+        httpdb.delete_cert(ra_nick)
 
 
 def update_mod_nss_protocol(http):
@@ -1635,7 +1644,7 @@ def upgrade_configuration():
     update_mod_nss_protocol(http)
     update_mod_nss_cipher_suite(http)
     fix_trust_flags()
-    export_ra_agent_pem()
+    update_ra_agent_crt()
     update_http_keytab(http)
     http.configure_gssproxy()
     http.start()
