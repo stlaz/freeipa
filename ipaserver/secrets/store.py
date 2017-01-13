@@ -266,10 +266,10 @@ NAME_DB_MAP = {
         'wrap_nick': 'caSigningCert cert-pki-ca',
     },
     'ra': {
-        'type': 'NSSDB',
-        'path': paths.HTTPD_ALIAS_DIR,
-        'handler': NSSCertDB,
-        'pwcallback': HTTPD_password_callback,
+        'type': 'OPENSSL',
+        'handler': OpenSSLHandler,
+        'certfile': paths.RA_AGENT_PEM,
+        'keyfile': paths.RA_AGENT_KEY,
     },
     'dm': {
         'type': 'DMLDAP',

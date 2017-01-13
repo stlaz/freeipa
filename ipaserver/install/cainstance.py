@@ -26,6 +26,7 @@ import dbus
 import ldap
 import os
 import pwd
+import grp
 import re
 import shutil
 import sys
@@ -64,9 +65,10 @@ from ipaserver.install import installutils
 from ipaserver.install import ldapupdate
 from ipaserver.install import replication
 from ipaserver.install import sysupgrade
-from ipaserver.install.dogtaginstance import (
-    DogtagInstance, export_ra_agent_pem)
+from ipaserver.install.dogtaginstance import DogtagInstance
 from ipaserver.plugins import ldap2
+
+from cryptography.hazmat.primitives import serialization
 
 # We need to reset the template because the CA uses the regular boot
 # information
@@ -381,8 +383,7 @@ class CAInstance(DogtagInstance):
             self.external = 2
 
         if self.clone:
-            cert_db = certs.CertDB(self.realm)
-            has_ra_cert = (cert_db.get_cert_from_db('ipaCert') != '')
+            has_ra_cert = os.path.exists(paths.RA_AGENT_PEM)
         else:
             has_ra_cert = False
 
@@ -416,7 +417,6 @@ class CAInstance(DogtagInstance):
                 else:
                     self.step("importing RA certificate from PKCS #12 file",
                               lambda: self.import_ra_cert(ra_p12))
-                self.step("exporting KRA agent cert", export_ra_agent_pem)
 
             if not ra_only:
                 self.step("importing CA chain to RA certificate database", self.__import_ca_chain)
@@ -661,13 +661,21 @@ class CAInstance(DogtagInstance):
 
         Used when setting up replication
         """
-        # Add the new RA cert to the database in /etc/httpd/alias
-        with tempfile.NamedTemporaryFile(mode="w") as agent_file:
-            agent_file.write(self.dm_password)
-            agent_file.flush()
+        # get the private key from the file
+        ipautil.run([paths.OPENSSL,
+                     "pkcs12",
+                     "-in", rafile,
+                     "-nocerts", "-nodes",
+                     "-out", paths.RA_AGENT_KEY,
+                     "-passin", "pass:"])
 
-            import_pkcs12(
-                rafile, agent_file.name, self.ra_agent_db, self.ra_agent_pwd)
+        # get the certificate from the pkcs12 file
+        ipautil.run([paths.OPENSSL,
+                     "pkcs12",
+                     "-in", rafile,
+                     "-clcerts", "-nokeys",
+                     "-out", paths.RA_AGENT_PEM,
+                     "-passin", "pass:"])
 
         self.configure_agent_renewal()
 
@@ -684,9 +692,8 @@ class CAInstance(DogtagInstance):
         the appropriate groups for accessing CA services.
         """
 
-        # get ipaCert certificate
-        cert_data = base64.b64decode(self.ra_cert)
-        cert = x509.load_certificate(cert_data, x509.DER)
+        # get RA certificate
+        cert_data = self.ra_cert.public_bytes(serialization.Encoding.DER)
 
         # connect to CA database
         server_id = installutils.realm_to_serverid(api.env.realm)
@@ -694,7 +701,7 @@ class CAInstance(DogtagInstance):
         conn = ldap2.ldap2(api, ldap_uri=dogtag_uri)
         conn.connect(autobind=True)
 
-        # create ipara user with ipaCert certificate
+        # create ipara user with RA certificate
         user_dn = DN(('uid', "ipara"), ('ou', 'People'), self.basedn)
         entry = conn.make_entry(
             user_dn,
@@ -707,7 +714,7 @@ class CAInstance(DogtagInstance):
             userstate=["1"],
             userCertificate=[cert_data],
             description=['2;%s;%s;%s' % (
-                cert.serial,
+                self.ra_cert.serial,
                 DN(self.ca_subject),
                 DN(('CN', 'IPA RA'), self.subject_base))])
         conn.add_entry(entry)
@@ -796,7 +803,7 @@ class CAInstance(DogtagInstance):
 
         chain = self.__get_ca_chain()
         data = base64.b64decode(chain)
-        result = ipautil.run(
+        ipautil.run(
             [paths.OPENSSL,
              "pkcs7",
              "-inform",
@@ -823,23 +830,18 @@ class CAInstance(DogtagInstance):
             # The certificate must be requested using caServerCert profile
             # because this profile does not require agent authentication
             reqId = certmonger.request_and_wait_for_cert(
-                certpath=self.ra_agent_db,
-                nickname='ipaCert',
+                certpath=(paths.RA_AGENT_PEM, paths.RA_AGENT_KEY),
                 principal='host/%s' % self.fqdn,
-                passwd_fname=self.ra_agent_pwd,
                 subject=str(DN(('CN', 'IPA RA'), self.subject_base)),
                 ca=ipalib.constants.RENEWAL_CA_NAME,
                 profile='caServerCert',
                 pre_command='renew_ra_cert_pre',
-                post_command='renew_ra_cert')
+                post_command='renew_ra_cert',
+                storage="FILE")
 
             self.requestId = str(reqId)
-            result = self.__run_certutil(
-                ['-L', '-n', 'ipaCert', '-a'], capture_output=True)
-            self.ra_cert = x509.strip_header(result.output)
-            self.ra_cert = "\n".join(
-                line.strip() for line
-                in self.ra_cert.splitlines() if line.strip())
+            self.ra_cert = x509.load_certificate_from_file(
+                paths.RA_AGENT_PEM)
         finally:
             # we can restore the helper parameters
             certmonger.modify_ca_helper(
@@ -850,6 +852,11 @@ class CAInstance(DogtagInstance):
                     os.remove(f.name)
                 except OSError:
                     pass
+
+        apache_gid = grp.getgrnam(constants.HTTPD_USER).gr_gid
+        for fname in (paths.RA_AGENT_PEM, paths.RA_AGENT_KEY):
+            os.chown(fname, -1, apache_gid)
+            os.chmod(fname, 0o440)
 
     def __setup_sign_profile(self):
         # Tell the profile to automatically issue certs for RAs
@@ -1006,12 +1013,11 @@ class CAInstance(DogtagInstance):
     def configure_agent_renewal(self):
         try:
             certmonger.dogtag_start_tracking(
-                certpath=paths.HTTPD_ALIAS_DIR,
+                certpath=(paths.RA_AGENT_PEM, paths.RA_AGENT_KEY),
                 ca='dogtag-ipa-ca-renew-agent',
-                nickname='ipaCert',
-                pinfile=paths.ALIAS_PWDFILE_TXT,
                 pre_command='renew_ra_cert_pre',
-                post_command='renew_ra_cert')
+                post_command='renew_ra_cert',
+                storage='FILE')
         except RuntimeError as e:
             self.log.error(
                 "certmonger failed to start tracking certificate: %s", e)
@@ -1028,7 +1034,7 @@ class CAInstance(DogtagInstance):
                 certmonger.stop_tracking(self.nss_db, nickname=nickname)
 
         try:
-            certmonger.stop_tracking(paths.HTTPD_ALIAS_DIR, nickname='ipaCert')
+            certmonger.stop_tracking(certfile=paths.RA_AGENT_PEM)
         except RuntimeError as e:
             root_logger.error(
                 "certmonger failed to stop tracking certificate: %s", e)

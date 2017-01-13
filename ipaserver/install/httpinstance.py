@@ -365,13 +365,13 @@ class HTTPInstance(service.Service):
             if not self.promote:
                 db.create_password_conf()
                 ca_args = [
-                    '/usr/libexec/certmonger/dogtag-submit',
+                    paths.CERTMONGER_DOGTAG_SUBMIT,
                     '--ee-url', 'https://%s:8443/ca/ee/ca' % self.fqdn,
-                    '--dbdir', paths.HTTPD_ALIAS_DIR,
-                    '--nickname', 'ipaCert',
-                    '--sslpinfile', paths.ALIAS_PWDFILE_TXT,
+                    '--certfile', paths.RA_AGENT_PEM,
+                    '--keyfile', paths.RA_AGENT_KEY,
+                    '--cafile', paths.IPA_CA_CRT,
                     '--agent-submit'
-                    ]
+                ]
                 helper = " ".join(ca_args)
                 prev_helper = certmonger.modify_ca_helper('IPA', helper)
 

@@ -183,8 +183,7 @@ def install_check(standalone, replica_config, options):
 
         for db in (cadb, dsdb):
             for nickname, _trust_flags in db.list_certs():
-                if nickname in (certdb.get_ca_nickname(realm_name),
-                                'ipaCert'):
+                if nickname == certdb.get_ca_nickname(realm_name):
                     raise ScriptError(
                         "Certificate with nickname %s is present in %s, "
                         "cannot continue." % (nickname, db.secdir))
@@ -316,15 +315,15 @@ def install_step_1(standalone, replica_config, options):
         cadb = certs.CertDB(realm_name, subject_base=subject_base)
         dsdb = certs.CertDB(realm_name, nssdir=dirname, subject_base=subject_base)
         trust_flags = dict(reversed(cadb.list_certs()))
-        trust_chain = cadb.find_root_cert('ipaCert')[:-1]
-        for nickname in trust_chain[:-1]:
-            cert = cadb.get_cert_from_db(nickname, pem=False)
+        trust_chain = certstore.get_ca_certs(
+            api.Backend.ldap2, api.env.basedn, api.env.realm, True)
+        for cert, nickname, _trusted, _ext_key_usage in trust_chain[:-1]:
             dsdb.add_cert(cert, nickname, trust_flags[nickname])
             certstore.put_ca_cert_nss(api.Backend.ldap2, api.env.basedn,
                                       cert, nickname, trust_flags[nickname])
 
-        nickname = trust_chain[-1]
-        cert = cadb.get_cert_from_db(nickname, pem=False)
+        nickname = trust_chain[-1][1]
+        cert = trust_chain[-1][0]
         dsdb.add_cert(cert, nickname, trust_flags[nickname])
         certstore.put_ca_cert_nss(api.Backend.ldap2, api.env.basedn,
                                   cert, nickname, trust_flags[nickname],
@@ -358,6 +357,8 @@ def uninstall():
     ca_instance = cainstance.CAInstance(
         api.env.realm, certs.NSS_DIR)
     ca_instance.stop_tracking_certificates()
+    installutils.remove_file(paths.RA_AGENT_PEM)
+    installutils.remove_file(paths.RA_AGENT_KEY)
     if ca_instance.is_configured():
         ca_instance.uninstall()
 

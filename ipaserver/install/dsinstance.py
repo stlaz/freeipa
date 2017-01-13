@@ -810,17 +810,15 @@ class DsInstance(service.Service):
                     self.nickname, self.principal, dsdb.passwd_fname,
                     'restart_dirsrv %s' % self.serverid)
         else:
-            cadb = certs.CertDB(self.realm, host_name=self.fqdn, subject_base=self.subject_base)
-
-            # FIXME, need to set this nickname in the RA plugin
-            cadb.export_ca_cert('ipaCert', False)
-            dsdb.create_from_cacert(cadb.cacert_fname, passwd=None)
-            ca_args = ['/usr/libexec/certmonger/dogtag-submit',
-                       '--ee-url', 'https://%s:8443/ca/ee/ca' % self.fqdn,
-                       '--dbdir', paths.HTTPD_ALIAS_DIR,
-                       '--nickname', 'ipaCert',
-                       '--sslpinfile', paths.ALIAS_PWDFILE_TXT,
-                       '--agent-submit']
+            dsdb.create_from_cacert(paths.IPA_CA_CRT, passwd=None)
+            ca_args = [
+                paths.CERTMONGER_DOGTAG_SUBMIT,
+                '--ee-url', 'https://%s:8443/ca/ee/ca' % self.fqdn,
+                '--certfile', paths.RA_AGENT_PEM,
+                '--keyfile', paths.RA_AGENT_KEY,
+                '--cafile', paths.IPA_CA_CRT,
+                '--agent-submit'
+            ]
             helper = " ".join(ca_args)
             prev_helper = certmonger.modify_ca_helper('IPA', helper)
             try:

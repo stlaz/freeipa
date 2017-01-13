@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ipaserver.install import installutils, certs, cainstance
+from ipaserver.install import installutils, cainstance
 from ipalib import errors
 from ipalib import Updater
 from ipalib.install import certmonger
@@ -34,7 +34,7 @@ class update_ca_renewal_master(Updater):
     """
 
     def execute(self, **options):
-        ca = cainstance.CAInstance(self.api.env.realm, certs.NSS_DIR)
+        ca = cainstance.CAInstance(self.api.env.realm)
         if not ca.is_configured():
             self.debug("CA is not configured on this host")
             return False, []
@@ -74,17 +74,16 @@ class update_ca_renewal_master(Updater):
                 return False, []
 
         criteria = {
-            'cert-database': paths.HTTPD_ALIAS_DIR,
-            'cert-nickname': 'ipaCert',
+            'cert-file': paths.RA_AGENT_PEM,
         }
         request_id = certmonger.get_request_id(criteria)
         if request_id is not None:
-            self.debug("found certmonger request for ipaCert")
+            self.debug("found certmonger request for RA cert")
 
             ca_name = certmonger.get_request_value(request_id, 'ca-name')
             if ca_name is None:
                 self.warning(
-                    "certmonger request for ipaCert is missing ca_name, "
+                    "certmonger request for RA cert is missing ca_name, "
                     "assuming local CA is renewal slave")
                 return False, []
             ca_name = ca_name.strip()
@@ -97,11 +96,11 @@ class update_ca_renewal_master(Updater):
                 return False, []
             else:
                 self.warning(
-                    "certmonger request for ipaCert has unknown ca_name '%s', "
+                    "certmonger request for RA cert has unknown ca_name '%s', "
                     "assuming local CA is renewal slave", ca_name)
                 return False, []
         else:
-            self.debug("certmonger request for ipaCert not found")
+            self.debug("certmonger request for RA cert not found")
 
             config = installutils.get_directive(
                 paths.CA_CS_CFG_PATH, 'subsystem.select', '=')
