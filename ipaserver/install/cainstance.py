@@ -1000,11 +1000,10 @@ class CAInstance(DogtagInstance):
     def configure_agent_renewal(self):
         try:
             certmonger.dogtag_start_tracking(
+                certpath=paths.IPA_RADB_DIR,
                 ca='dogtag-ipa-ca-renew-agent',
                 nickname='ipaCert',
-                pin=None,
                 pinfile=os.path.join(paths.IPA_RADB_DIR, 'pwdfile.txt'),
-                secdir=paths.IPA_RADB_DIR,
                 pre_command='renew_ra_cert_pre',
                 post_command='renew_ra_cert')
         except RuntimeError as e:
@@ -1801,9 +1800,8 @@ def add_lightweight_ca_tracking_requests(logger, lwcas):
         if request_id is None:
             try:
                 certmonger.dogtag_start_tracking(
-                    secdir=paths.PKI_TOMCAT_ALIAS_DIR,
+                    certpath=paths.PKI_TOMCAT_ALIAS_DIR,
                     pin=certmonger.get_pin('internal'),
-                    pinfile=None,
                     nickname=nickname,
                     ca=ipalib.constants.RENEWAL_CA_NAME,
                     pre_command='stop_pkicad',
