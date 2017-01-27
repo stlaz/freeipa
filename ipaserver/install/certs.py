@@ -301,7 +301,8 @@ class CertDB(object):
         if command is not None and not os.path.isabs(command):
             command = paths.CERTMONGER_COMMAND_TEMPLATE % (command)
         try:
-            request_id = certmonger.start_tracking(nickname, self.secdir, password_file, command)
+            request_id = certmonger.start_tracking(
+                self.secdir, nickname, password_file, command)
         except RuntimeError as e:
             root_logger.error("certmonger failed starting to track certificate: %s" % str(e))
             return
