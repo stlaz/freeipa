@@ -2019,8 +2019,11 @@ class kra(Backend):
             str(self.kra_port),
             'kra')
 
-        connection.set_authentication_cert(paths.RA_AGENT_PEM,
-                                           paths.RA_AGENT_KEY)
+        connection.session.cert = (paths.RA_AGENT_PEM, paths.RA_AGENT_KEY)
+        # uncomment the following when this commit makes it to release
+        # https://git.fedorahosted.org/cgit/pki.git/commit/?id=71ae20c
+        # connection.set_authentication_cert(paths.RA_AGENT_PEM,
+        #                                    paths.RA_AGENT_KEY)
 
         return KRAClient(connection, crypto)
 
