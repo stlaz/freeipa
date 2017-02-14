@@ -297,7 +297,7 @@ class CAInstance(DogtagInstance):
                      ('caSigningCert cert-pki-ca', 'ipaCACertRenewal'))
     server_cert_name = 'Server-Cert cert-pki-ca'
 
-    def __init__(self, realm=None, ra_db=None, host_name=None):
+    def __init__(self, realm=None, host_name=None):
         super(CAInstance, self).__init__(
             realm=realm,
             subsystem="CA",
@@ -316,11 +316,6 @@ class CAInstance(DogtagInstance):
             self.canickname = get_ca_nickname(realm)
         else:
             self.canickname = None
-        self.ra_agent_db = ra_db
-        if self.ra_agent_db is not None:
-            self.ra_agent_pwd = self.ra_agent_db + "/pwdfile.txt"
-        else:
-            self.ra_agent_pwd = None
         self.ra_cert = None
         self.requestId = None
         self.log = log_mgr.get_logger(self)
@@ -758,16 +753,6 @@ class CAInstance(DogtagInstance):
         db = certs.CertDB(self.realm)
         db.publish_ca_cert(location)
 
-    def __run_certutil(self, args, database=None, pwd_file=None, stdin=None,
-                       **kwargs):
-        if not database:
-            database = self.ra_agent_db
-        if not pwd_file:
-            pwd_file = self.ra_agent_pwd
-        new_args = [paths.CERTUTIL, "-d", database, "-f", pwd_file]
-        new_args = new_args + args
-        return ipautil.run(new_args, stdin, nolog=(pwd_file,), **kwargs)
-
     def __get_ca_chain(self):
         try:
             return dogtag.get_ca_certchain(ca_host=self.fqdn)
@@ -807,7 +792,7 @@ class CAInstance(DogtagInstance):
                 else:
                     nick = str(subject_dn)
                     trust_flags = ',,'
-                self.__run_certutil(
+                certdb.run_certutil(
                     ['-A', '-t', trust_flags, '-n', nick, '-a',
                      '-i', chain_file.name]
                 )
@@ -1008,6 +993,17 @@ class CAInstance(DogtagInstance):
             except OSError as e:
                 self.log.warning("Error while removing CRL publish "
                                     "directory: %s", e)
+
+    def publish_ca_cert(self, location):
+        db = certs.CertDB(self.realm)
+        args = ["-L", "-n", self.canickname, "-a"]
+        result = db.run_certutil(
+            args, capture_output=True)
+        cert = result.output
+        fd = open(location, "w+")
+        fd.write(cert)
+        fd.close()
+        os.chmod(location, 0o444)
 
     def unconfigure_certmonger_renewal_guard(self):
         if not self.is_configured():
@@ -1870,5 +1866,5 @@ if __name__ == "__main__":
     standard_logging_setup("install.log")
     ds = dsinstance.DsInstance()
 
-    ca = CAInstance("EXAMPLE.COM", paths.HTTPD_ALIAS_DIR)
+    ca = CAInstance("EXAMPLE.COM")
     ca.configure_instance("catest.example.com", "password", "password")
