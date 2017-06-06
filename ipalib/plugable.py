@@ -342,6 +342,7 @@ class API(ReadOnly):
 
     def __init__(self):
         super(API, self).__init__()
+        self.register = Registry()
         self.__plugins = set()
         self.__plugins_by_key = {}
         self.__default_map = {}
@@ -587,6 +588,7 @@ class API(ReadOnly):
         """
         self.__doing('load_plugins')
         self.__do_if_not_done('bootstrap')
+        self.add_module(self)
         if self.env.mode in ('dummy', 'unit_test'):
             return
         for package in self.packages:
@@ -646,21 +648,21 @@ class API(ReadOnly):
         else:
             if isinstance(register, Registry):
                 for kwargs in register:
-                    self.add_plugin(**kwargs)
+                    self.__add_class(**kwargs)
                 return
 
         raise errors.PluginModuleError(name=module.__name__)
 
-    def add_plugin(self, plugin, override=False, no_fail=False):
+    def add_plugin(self, plugin, **kwargs):
         """
         Add the plugin ``plugin``.
 
         :param plugin: A subclass of `Plugin` to attempt to add.
         :param override: If true, override an already added plugin.
         """
-        if not callable(plugin):
-            raise TypeError('plugin must be callable; got %r' % plugin)
+        self.register(**kwargs)(plugin)
 
+    def __add_class(self, plugin, override=False, no_fail=False):
         # Find the base class or raise SubclassError:
         for base in plugin.bases:
             if issubclass(base, self.bases):
