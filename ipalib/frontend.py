@@ -22,6 +22,7 @@ Base classes for all front-end plugins.
 """
 import six
 
+from ipalib import plugable
 from ipapython.version import API_VERSION
 from ipapython.ipautil import APIVersion
 from ipapython.ipa_log_manager import root_logger
@@ -366,6 +367,16 @@ class HasParam(Plugable):
         return context.current_frame
 
 
+class CommandClassPlugin(plugable.ClassPlugin):
+    @property
+    def NO_CLI(self):
+        return self.klass.NO_CLI
+
+    @property
+    def topic(self):
+        return self.klass.topic
+
+
 _callback_registry = {}
 
 
@@ -399,6 +410,7 @@ class Command(HasParam):
     Subclasses should define the `callback_types` attribute as a tuple of
     allowed callback types.
     """
+    plugin_type = CommandClassPlugin
 
     takes_options = tuple()
     takes_args = tuple()

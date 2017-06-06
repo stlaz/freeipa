@@ -55,7 +55,7 @@ class _fake_automountlocation_show(Method):
 class automountlocation_tofiles(MethodOverride):
     @classmethod
     def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('automountlocation_show') is
+        return (api.Command.get_plugin('automountlocation_show').klass is
                 _fake_automountlocation_show)
 
     NO_CLI = classproperty(__NO_CLI_getter)

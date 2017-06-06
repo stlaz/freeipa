@@ -82,7 +82,8 @@ class otptoken_add_yubikey(Command):
 
     @classmethod
     def __NO_CLI_getter(cls):
-        return api.Command.get_plugin('otptoken_add') is _fake_otptoken_add
+        return (api.Command.get_plugin('otptoken_add').klass is
+                _fake_otptoken_add)
 
     NO_CLI = classproperty(__NO_CLI_getter)
 

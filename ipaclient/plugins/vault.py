@@ -187,7 +187,7 @@ class vault_add(Local):
 
     @classmethod
     def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_add_internal') is
+        return (api.Command.get_plugin('vault_add_internal').klass is
                 _fake_vault_add_internal)
 
     NO_CLI = classproperty(__NO_CLI_getter)
@@ -398,7 +398,7 @@ class vault_mod(Local):
 
     @classmethod
     def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_mod_internal') is
+        return (api.Command.get_plugin('vault_mod_internal').klass is
                 _fake_vault_mod_internal)
 
     NO_CLI = classproperty(__NO_CLI_getter)
@@ -727,7 +727,7 @@ class vault_archive(ModVaultData):
 
     @classmethod
     def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_archive_internal') is
+        return (api.Command.get_plugin('vault_archive_internal').klass is
                 _fake_vault_archive_internal)
 
     NO_CLI = classproperty(__NO_CLI_getter)
@@ -973,7 +973,7 @@ class vault_retrieve(ModVaultData):
 
     @classmethod
     def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_retrieve_internal') is
+        return (api.Command.get_plugin('vault_retrieve_internal').klass is
                 _fake_vault_retrieve_internal)
 
     NO_CLI = classproperty(__NO_CLI_getter)

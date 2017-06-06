@@ -17,7 +17,7 @@ from ipaclient.frontend import ClientCommand, ClientMethod
 from ipalib import errors, parameters, plugable
 from ipalib.constants import USER_CACHE_PATH
 from ipalib.errors import SchemaUpToDate
-from ipalib.frontend import Object
+from ipalib.frontend import CommandClassPlugin, Object
 from ipalib.output import Output
 from ipalib.parameters import DefaultFrom, Flag, Password, Str
 from ipapython.ipautil import fsdecode
@@ -225,6 +225,8 @@ class _SchemaPlugin(object):
 
 
 class _SchemaCommandPlugin(_SchemaPlugin):
+    plugin_type = CommandClassPlugin
+
     bases = (_SchemaCommand,)
     schema_key = 'commands'
 

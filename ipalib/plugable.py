@@ -27,6 +27,7 @@ http://docs.python.org/ref/sequence-types.html
 import operator
 import sys
 import threading
+import weakref
 import os
 from os import path
 import optparse  # pylint: disable=deprecated-module
@@ -96,28 +97,85 @@ class Registry(object):
         self.__registry = collections.OrderedDict()
 
     def __call__(self, **kwargs):
-        def register(plugin):
+        def register(klass):
             """
-            Register the plugin ``plugin``.
+            Register the plugin ``klass``.
 
-            :param plugin: A subclass of `Plugin` to attempt to register.
+            :param klass: A subclass of `Plugin` to attempt to register.
             """
-            if not callable(plugin):
-                raise TypeError('plugin must be callable; got %r' % plugin)
+            if not callable(klass):
+                raise TypeError('plugin must be callable; got %r' % klass)
 
             # Raise DuplicateError if this exact class was already registered:
-            if plugin in self.__registry:
-                raise errors.PluginDuplicateError(plugin=plugin)
+            if klass in self.__registry:
+                raise errors.PluginDuplicateError(plugin=klass)
 
             # The plugin is okay, add to __registry:
-            self.__registry[plugin] = dict(kwargs, plugin=plugin)
+            self.__registry[klass] = kwargs
 
-            return plugin
+            return klass
 
         return register
 
     def __iter__(self):
-        return iter(self.__registry.values())
+        return six.iteritems(self.__registry)
+
+
+class ClassPlugin(object):
+    def __init__(self, klass, api):
+        self.__klass = klass
+        self.__api_weakref = weakref.ref(api)
+
+    def get_api(self):
+        return self.__api_weakref()
+
+    @property
+    def klass(self):
+        return self.__klass
+
+    @property
+    def name(self):
+        return self.klass.name
+
+    @property
+    def version(self):
+        return self.klass.version
+
+    @property
+    def full_name(self):
+        return self.klass.full_name
+
+    @property
+    def bases(self):
+        return self.klass.bases
+
+    @property
+    def doc(self):
+        return self.klass.doc
+
+    @property
+    def summary(self):
+        return self.klass.summary
+
+    def __hash__(self):
+        return hash(self.full_name)
+
+    def __eq__(self, other):
+        api = self.get_api()
+        if api is not None and isinstance(other, ClassPlugin):
+            return other.get_api() is api and other.full_name == self.full_name
+
+        return NotImplemented
+
+    def __ne__(self, other):
+        equal = self.__eq__(other)
+        if equal is not NotImplemented:
+            return not equal
+
+        return NotImplemented
+
+    def __call__(self):
+        return self.klass(self.get_api())
 
 
 class Plugable(ReadOnly):
@@ -298,6 +356,7 @@ class APINameSpace(collections.Mapping):
                 continue
             plugins.add(plugin)
             key_dict[plugin] = plugin
+            key_dict[plugin.klass] = plugin
             key_dict[plugin.name, plugin.version] = plugin
             key_dict[plugin.full_name] = plugin
             if plugin.version == default_map.get(plugin.name, '1'):
@@ -647,29 +706,32 @@ class API(ReadOnly):
             pass
         else:
             if isinstance(register, Registry):
-                for kwargs in register:
-                    self.__add_class(**kwargs)
+                for klass, kwargs in register:
+                    self.__add_class(klass, **kwargs)
                 return
 
         raise errors.PluginModuleError(name=module.__name__)
 
-    def add_plugin(self, plugin, **kwargs):
+    def add_plugin(self, klass, **kwargs):
         """
-        Add the plugin ``plugin``.
+        Add the plugin ``klass``.
 
-        :param plugin: A subclass of `Plugin` to attempt to add.
+        :param klass: A subclass of `Plugin` to attempt to add.
         :param override: If true, override an already added plugin.
         """
-        self.register(**kwargs)(plugin)
+        self.register(**kwargs)(klass)
 
-    def __add_class(self, plugin, override=False, no_fail=False):
+    def __add_class(self, klass, override=False, no_fail=False):
+        plugin_type = getattr(klass, 'plugin_type', ClassPlugin)
+        plugin = plugin_type(klass, self)
+
         # Find the base class or raise SubclassError:
         for base in plugin.bases:
             if issubclass(base, self.bases):
                 break
         else:
             raise errors.PluginSubclassError(
-                plugin=plugin,
+                plugin=plugin.klass,
                 bases=self.bases,
             )
 
@@ -684,7 +746,7 @@ class API(ReadOnly):
                     raise errors.PluginOverrideError(
                         base=base.__name__,
                         name=plugin.name,
-                        plugin=plugin,
+                        plugin=plugin.klass,
                     )
 
             self.__plugins.remove(prev)
@@ -698,7 +760,7 @@ class API(ReadOnly):
                     raise errors.PluginMissingOverrideError(
                         base=base.__name__,
                         name=plugin.name,
-                        plugin=plugin,
+                        plugin=plugin.klass,
                     )
 
         # The plugin is okay, add to sub_d:
@@ -767,22 +829,17 @@ class API(ReadOnly):
             lock(self)
 
     def _get(self, plugin):
-        if not callable(plugin):
-            raise TypeError('plugin must be callable; got %r' % plugin)
         if plugin not in self.__plugins:
             raise KeyError(plugin)
 
         try:
             instance = self.__instances[plugin]
         except KeyError:
-            instance = self.__instances[plugin] = plugin(self)
+            instance = self.__instances[plugin] = plugin()
 
         return instance
 
     def get_plugin_next(self, plugin):
-        if not callable(plugin):
-            raise TypeError('plugin must be callable; got %r' % plugin)
-
         return self.__next[plugin]
 
 
