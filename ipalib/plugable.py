@@ -47,7 +47,7 @@ from ipapython.ipa_log_manager import (
     log_mgr,
     LOGGING_FORMAT_FILE,
     LOGGING_FORMAT_STDERR)
-from ipapython.version import VERSION, API_VERSION, PLUGIN_DEFAULT_VERSIONS
+from ipapython.version import VERSION, API_VERSION
 
 if six.PY3:
     unicode = str
@@ -140,48 +140,16 @@ class ClassPlugin(object):
         return name
 
     @property
-    def version(self):
-        version = getattr(self.klass, 'version', Plugable.version)
-        if version is Plugable.version:
-            version = '1'
-        return version
-
-    @property
-    def full_name(self):
-        return '{}/{}'.format(self.name, self.version)
-
-    @property
     def bases(self):
         return self.klass.__bases__
 
     @property
-    def doc(self):
-        doc = getattr(self.klass, 'doc', Plugable.doc)
-        if doc is Plugable.doc:
-            doc = self.klass.__doc__
-        return doc
-
-    @property
-    def summary(self):
-        doc = self.doc
-        if not _(doc).msg:
-            return u'<%s.%s>' % (self.klass.__module__, self.klass.__name__)
-        else:
-            return unicode(doc).split('\n\n', 1)[0].strip()
-
-    @property
     def key(self):
-        return self.full_name
+        return self.name
 
     @property
     def aux_keys(self):
-        result = frozenset({self.klass})
-
-        result |= {(self.name, self.version)}
-        if self.version == PLUGIN_DEFAULT_VERSIONS.get(self.name, '1'):
-            result |= {self.name}
-
-        return result
+        return frozenset({self.klass})
 
     def __hash__(self):
         return hash(self.key)
@@ -222,24 +190,8 @@ class Plugable(ReadOnly):
         return self.api.get_plugin(self.__class__).name
 
     @property
-    def version(self):
-        return self.api.get_plugin(self.__class__).version
-
-    @property
-    def full_name(self):
-        return self.api.get_plugin(self.__class__).full_name
-
-    @property
     def bases(self):
         return self.api.get_plugin(self.__class__).bases
-
-    @property
-    def doc(self):
-        return self.api.get_plugin(self.__class__).doc
-
-    @property
-    def summary(self):
-        return self.api.get_plugin(self.__class__).summary
 
     @property
     def api(self):

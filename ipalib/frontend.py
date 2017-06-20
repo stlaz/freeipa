@@ -23,7 +23,7 @@ Base classes for all front-end plugins.
 import six
 
 from ipalib import plugable
-from ipapython.version import API_VERSION
+from ipapython.version import API_VERSION, PLUGIN_DEFAULT_VERSIONS
 from ipapython.ipautil import APIVersion
 from ipapython.ipa_log_manager import root_logger
 from ipalib.base import NameSpace
@@ -70,7 +70,43 @@ def entry_count(entry):
     return num_entries
 
 
-class HasParam(Plugable):
+class FrontendClassPlugin(plugable.ClassPlugin):
+    @property
+    def version(self):
+        return self.klass.version
+
+    @property
+    def full_name(self):
+        return self.klass.full_name
+
+    @property
+    def doc(self):
+        return self.klass.doc
+
+    @property
+    def summary(self):
+        return self.klass.summary
+
+    @property
+    def key(self):
+        return self.full_name
+
+    @property
+    def aux_keys(self):
+        result = super(FrontendClassPlugin, self).aux_keys
+
+        result |= {(self.name, self.version)}
+        if self.version == PLUGIN_DEFAULT_VERSIONS.get(self.name, '1'):
+            result |= {self.name}
+
+        return result
+
+
+class FrontendPlugable(Plugable):
+    plugin_type = FrontendClassPlugin
+
+
+class HasParam(FrontendPlugable):
     """
     Base class for plugins that have `Param` `NameSpace` attributes.
 
@@ -224,9 +260,33 @@ class HasParam(Plugable):
     of ``api.env.context``, subclasses can override this with implementations
     that consider arbitrary ``api.env`` values.
     """
+    version = '1'
+
     # HasParam is the base class for most frontend plugins, that make it to users
     # This flag indicates that the command should not be available in the cli
     NO_CLI = False
+
+    @classmethod
+    def __full_name_getter(cls):
+        return '{}/{}'.format(cls.name, cls.version)
+
+    full_name = classproperty(__full_name_getter)
+
+    @classmethod
+    def __doc_getter(cls):
+        return cls.__doc__
+
+    doc = classproperty(__doc_getter)
+
+    @classmethod
+    def __summary_getter(cls):
+        doc = cls.doc
+        if not _(doc).msg:
+            return u'<%s.%s>' % (cls.__module__, cls.__name__)
+        else:
+            return unicode(doc).split('\n\n', 1)[0].strip()
+
+    summary = classproperty(__summary_getter)
 
     def _get_param_iterable(self, name, verb='takes'):
         """
@@ -367,7 +427,7 @@ class HasParam(Plugable):
         return context.current_frame
 
 
-class CommandClassPlugin(plugable.ClassPlugin):
+class CommandClassPlugin(FrontendClassPlugin):
     @property
     def NO_CLI(self):
         NO_CLI = getattr(self.klass, 'NO_CLI', Command.NO_CLI)
@@ -1313,7 +1373,7 @@ class Object(HasParam):
         return json_dict
 
 
-class Attribute(Plugable):
+class Attribute(FrontendPlugable):
     """
     Base class implementing the attribute-to-object association.
 
