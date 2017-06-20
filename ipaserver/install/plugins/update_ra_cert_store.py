@@ -6,11 +6,11 @@ import os
 import tempfile
 
 from ipalib import Registry
-from ipalib import Updater
 from ipalib.install import certmonger
 from ipaplatform.paths import paths
 from ipapython.certdb import NSSDatabase
 from ipaserver.install import cainstance
+from ipaserver.install.update import Updater
 
 register = Registry()
 

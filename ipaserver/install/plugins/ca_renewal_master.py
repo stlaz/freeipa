@@ -18,8 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ipaserver.install import installutils, cainstance
+from ipaserver.install.update import Updater
 from ipalib import errors
-from ipalib import Updater
 from ipalib.install import certmonger
 from ipalib.plugable import Registry
 from ipaplatform.paths import paths

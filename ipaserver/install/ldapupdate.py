@@ -34,7 +34,7 @@ import fnmatch
 import ldap
 import six
 
-from ipaserver.install import installutils
+from ipaserver.install import installutils, update
 from ipapython import ipautil, ipaldap
 from ipalib import errors
 from ipalib import api, create_api
@@ -307,7 +307,7 @@ class LDAPUpdate(object):
         if not self.sub_dict.get("TOTAL_EXCLUDES"):
             self.sub_dict["TOTAL_EXCLUDES"] = "(objectclass=*) $ EXCLUDE " + \
                 " ".join(constants.REPL_AGMT_TOTAL_EXCLUDES)
-        self.api = create_api(mode=None)
+        self.api = update.UpdateAPI(create_api(mode=None))
         self.api.bootstrap(in_server=True,
                            context='updates',
                            confdir=paths.ETC_IPA,

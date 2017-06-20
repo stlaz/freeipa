@@ -20,8 +20,8 @@
 from ipalib.install import certstore
 from ipaplatform.paths import paths
 from ipaserver.install import certs
+from ipaserver.install.update import Updater
 from ipalib import Registry, errors
-from ipalib import Updater
 from ipapython import certdb
 from ipapython.dn import DN
 

@@ -4,10 +4,10 @@
 
 from ipalib import errors
 from ipalib import Registry
-from ipalib import Updater
 from ipapython.dn import DN
 from ipaserver.install import cainstance
 from ipaserver.install import ldapupdate
+from ipaserver.install.update import Updater
 from ipaplatform.paths import paths
 
 register = Registry()

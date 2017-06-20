@@ -18,8 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ipaserver.install import replication
+from ipaserver.install.update import Updater
 from ipalib import Registry
-from ipalib import Updater
 
 register = Registry()
 

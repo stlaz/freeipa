@@ -917,7 +917,7 @@ if 'git' in __version__:
 # noqa: E402
 from ipalib import plugable
 from ipalib.backend import Backend
-from ipalib.frontend import Command, LocalOrRemote, Updater
+from ipalib.frontend import Command, LocalOrRemote
 from ipalib.frontend import Object, Method
 from ipalib.crud import Create, Retrieve, Update, Delete, Search
 from ipalib.parameters import DefaultFrom, Bool, Flag, Int, Decimal, Bytes, Str, IA5Str, Password, DNParam
@@ -926,11 +926,18 @@ from ipalib.parameters import (BytesEnum, StrEnum, IntEnum, AccessTime, File,
 from ipalib.errors import SkipPluginModule
 from ipalib.text import _, ngettext, GettextFactory, NGettextFactory
 
+try:
+    # pylint: disable=import-error,ipa-forbidden-import
+    from ipaserver.install.update import Updater
+    # pylint: enable=import-error,ipa-forbidden-import
+except ImportError:
+    pass
+
 Registry = plugable.Registry
 
 
 class API(plugable.API):
-    bases = (Command, Object, Method, Backend, Updater)
+    bases = (Command, Object, Method, Backend)
 
     @property
     def packages(self):
@@ -948,12 +955,6 @@ class API(plugable.API):
                 ipaclient.remote_plugins.get_package(self),
                 ipaclient.plugins,
             )
-
-        if self.env.context in ('installer', 'updates'):
-            # pylint: disable=import-error,ipa-forbidden-import
-            import ipaserver.install.plugins
-            # pylint: enable=import-error,ipa-forbidden-import
-            result += (ipaserver.install.plugins,)
 
         return result
 

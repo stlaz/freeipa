@@ -87,9 +87,9 @@ import six
 
 from ipalib import api, errors
 from ipapython.dn import DN
+from ipaserver.install.update import Updater
 from ipalib.plugable import Registry
 from ipalib.aci import ACI
-from ipalib import Updater
 from ipapython import ipautil
 from ipaserver.plugins import aci
 from ipaserver.plugins.permission import permission, permission_del

@@ -3,9 +3,9 @@
 #
 
 from ipalib import Registry
-from ipalib import Updater
 from ipalib import errors
 from ipapython.dn import DN
+from ipaserver.install.update import Updater
 
 register = Registry()
 

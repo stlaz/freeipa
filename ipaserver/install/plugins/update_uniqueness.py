@@ -18,9 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ipalib import Registry, errors
-from ipalib import Updater
 from ipapython.dn import DN
 from ipapython.ipa_log_manager import root_logger
+from ipaserver.install.update import Updater
 
 register = Registry()
 

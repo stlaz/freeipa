@@ -27,12 +27,12 @@ import time
 from ldif import LDIFWriter
 
 from ipalib import Registry, errors, util
-from ipalib import Updater
 from ipapython.dn import DN
 from ipapython import dnsutil
 from ipapython.ipa_log_manager import root_logger
 from ipaserver.install import sysupgrade
 from ipaserver.install.bindinstance import ensure_dnsserver_container_exists
+from ipaserver.install.update import Updater
 from ipaserver.plugins.dns import dns_container_exists
 
 register = Registry()

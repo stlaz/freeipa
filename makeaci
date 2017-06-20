@@ -32,9 +32,10 @@ from argparse import ArgumentParser
 
 import ignore_import_errors     # pylint: disable=unused-import
 
-from ipalib import api
+from ipalib import api as ipalib_api
 from ipapython.dn import DN
 from ipapython.ipaldap import LDAPClient
+from ipaserver.install.update import UpdateAPI
 
 
 def parse_options():
@@ -87,6 +88,7 @@ def check_member_attrs(name, template):
 
 
 def main(options):
+    api = UpdateAPI(ipalib_api)
     api.bootstrap(
         in_server=True,
         in_tree=True,
@@ -100,10 +102,6 @@ def main(options):
         realm='IPA.EXAMPLE',
         domain="example.com",
     )
-
-    from ipaserver.install.plugins import update_managed_permissions
-    api.add_module(update_managed_permissions)
-
     api.finalize()
 
     output_lines = list(generate_aci_lines(api))

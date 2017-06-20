@@ -4,11 +4,11 @@
 
 from ipalib.plugable import Registry
 from ipalib import errors
-from ipalib import Updater
 from ipaplatform.paths import paths
 from ipapython.dn import DN
 from ipaserver.install import sysupgrade
 from ipaserver.install.ldapupdate import LDAPUpdate
+from ipaserver.install.update import Updater
 
 register = Registry()
 

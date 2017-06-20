@@ -7,8 +7,8 @@ import ldap
 
 from ipalib.plugable import Registry
 from ipalib import errors
-from ipalib import Updater
 from ipapython.dn import DN
+from ipaserver.install.update import Updater
 
 register = Registry()
 

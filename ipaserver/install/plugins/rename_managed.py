@@ -20,9 +20,9 @@
 import six
 
 from ipalib import Registry, errors
-from ipalib import Updater
 from ipapython import ipautil
 from ipapython.dn import DN
+from ipaserver.install.update import Updater
 
 register = Registry()
 
