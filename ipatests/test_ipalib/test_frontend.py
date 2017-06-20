@@ -1101,7 +1101,7 @@ class test_Attribute(ClassChecker):
         """
         Test the `ipalib.frontend.Attribute` class.
         """
-        assert self.cls.__bases__ == (plugable.Plugin,)
+        assert self.cls.__bases__ == (plugable.Plugable,)
         assert type(self.cls.obj) is property
         assert type(self.cls.obj_name) is property
         assert type(self.cls.attr_name) is property

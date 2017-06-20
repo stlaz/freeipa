@@ -24,7 +24,7 @@ import os
 from textwrap import wrap
 
 from ipalib import api
-from ipalib.plugable import Plugin, API
+from ipalib.plugable import Plugable, API
 from ipalib.errors import ValidationError
 from ipaplatform.paths import paths
 from ipapython import admintool
@@ -358,7 +358,7 @@ class _AdviceOutput(object):
             yield
 
 
-class Advice(Plugin):
+class Advice(Plugable):
     """
     Base class for advices, plugins for ipa-advise.
     """

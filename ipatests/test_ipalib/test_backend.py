@@ -46,7 +46,7 @@ class test_Backend(ClassChecker):
     _cls = backend.Backend
 
     def test_class(self):
-        assert self.cls.__bases__ == (plugable.Plugin,)
+        assert self.cls.__bases__ == (plugable.Plugable,)
 
 
 class Disconnect(object):

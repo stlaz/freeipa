@@ -35,26 +35,26 @@ import pytest
 
 pytestmark = pytest.mark.tier0
 
-class test_Plugin(ClassChecker):
+class test_Plugable(ClassChecker):
     """
-    Test the `ipalib.plugable.Plugin` class.
+    Test the `ipalib.plugable.Plugable` class.
     """
-    _cls = plugable.Plugin
+    _cls = plugable.Plugable
 
     def test_class(self):
         """
-        Test the `ipalib.plugable.Plugin` class.
+        Test the `ipalib.plugable.Plugable` class.
         """
         assert self.cls.__bases__ == (plugable.ReadOnly,)
         assert type(self.cls.api) is property
 
     def test_init(self):
         """
-        Test the `ipalib.plugable.Plugin.__init__` method.
+        Test the `ipalib.plugable.Plugable.__init__` method.
         """
         api = 'the api instance'
         o = self.cls(api)
-        assert o.name == 'Plugin'
+        assert o.name == 'Plugable'
         assert isinstance(o.doc, str)
         class some_subclass(self.cls):
             """
@@ -76,8 +76,9 @@ class test_Plugin(ClassChecker):
         assert o.summary == u'<%s.%s>' % (another_subclass.__module__,
                                           another_subclass.__name__)
 
-        # Test that Plugin makes sure the subclass hasn't defined attributes
-        # whose names conflict with the logger methods set in Plugin.__init__():
+        # Test that Plugable makes sure the subclass hasn't defined attributes
+        # whose names conflict with the logger methods set in
+        # Plugable.__init__():
         class check(self.cls):
             info = 'whatever'
         e = raises(Exception, check, api)
@@ -86,7 +87,7 @@ class test_Plugin(ClassChecker):
 
     def test_finalize(self):
         """
-        Test the `ipalib.plugable.Plugin.finalize` method.
+        Test the `ipalib.plugable.Plugable.finalize` method.
         """
         class api(object):
             @staticmethod
@@ -172,11 +173,11 @@ class test_API(ClassChecker):
         assert issubclass(plugable.API, plugable.ReadOnly)
 
         # Setup the test bases, create the API:
-        class base0(plugable.Plugin):
+        class base0(plugable.Plugable):
             def method(self, n):
                 return n
 
-        class base1(plugable.Plugin):
+        class base1(plugable.Plugable):
             def method(self, n):
                 return n + 1
 

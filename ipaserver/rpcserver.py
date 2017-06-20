@@ -130,7 +130,7 @@ _success_template = """<html>
 </body>
 </html>"""
 
-class HTTP_Status(plugable.Plugin):
+class HTTP_Status(plugable.Plugable):
     def not_found(self, environ, start_response, url, message):
         """
         Return a 404 Not Found error.

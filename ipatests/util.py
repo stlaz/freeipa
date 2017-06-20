@@ -39,7 +39,7 @@ import ldap.modlist
 
 import ipalib
 from ipalib import api
-from ipalib.plugable import Plugin
+from ipalib.plugable import Plugable
 from ipalib.request import context
 from ipapython.dn import DN
 from ipapython.ipautil import run
@@ -565,7 +565,7 @@ class PluginTester(object):
     def __get_plugin(self):
         if self.__plugin is None:
             self.__plugin = self._plugin  # pylint: disable=E1101
-        assert issubclass(self.__plugin, Plugin)
+        assert issubclass(self.__plugin, Plugable)
         return self.__plugin
     plugin = property(__get_plugin)
 

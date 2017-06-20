@@ -29,7 +29,7 @@ from ipalib.errors import PublicError, InternalError, CommandError
 from ipalib.request import context, Connection, destroy_context
 
 
-class Backend(plugable.Plugin):
+class Backend(plugable.Plugable):
     """
     Base class for all backend plugins.
     """

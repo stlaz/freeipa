@@ -201,12 +201,7 @@ ipa_class_members = {
     'ipalib.plugable.API': [
         fake_api_env,
     ] + NAMESPACE_ATTRS + LOGGING_ATTRS,
-    'ipalib.plugable.Plugin': [
-        'Object',
-        'Method',
-        'Updater',
-        'Advice',
-    ] + LOGGING_ATTRS,
+    'ipalib.plugable.Plugable': LOGGING_ATTRS,
     'ipalib.util.ForwarderValidationError': [
         'msg',
     ],

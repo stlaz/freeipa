@@ -26,7 +26,7 @@ from ipapython.version import API_VERSION
 from ipapython.ipautil import APIVersion
 from ipapython.ipa_log_manager import root_logger
 from ipalib.base import NameSpace
-from ipalib.plugable import Plugin, APINameSpace
+from ipalib.plugable import Plugable, APINameSpace
 from ipalib.parameters import create_param, Param, Str, Flag
 from ipalib.parameters import Password  # pylint: disable=unused-import
 from ipalib.output import Output, Entry, ListOfEntries
@@ -69,7 +69,7 @@ def entry_count(entry):
     return num_entries
 
 
-class HasParam(Plugin):
+class HasParam(Plugable):
     """
     Base class for plugins that have `Param` `NameSpace` attributes.
 
@@ -403,16 +403,16 @@ class Command(HasParam):
     takes_options = tuple()
     takes_args = tuple()
     # Create stubs for attributes that are set in _on_finalize()
-    args = Plugin.finalize_attr('args')
-    options = Plugin.finalize_attr('options')
-    params = Plugin.finalize_attr('params')
-    params_by_default = Plugin.finalize_attr('params_by_default')
+    args = Plugable.finalize_attr('args')
+    options = Plugable.finalize_attr('options')
+    params = Plugable.finalize_attr('params')
+    params_by_default = Plugable.finalize_attr('params_by_default')
     obj = None
 
     use_output_validation = True
-    output = Plugin.finalize_attr('output')
+    output = Plugable.finalize_attr('output')
     has_output = ('result',)
-    output_params = Plugin.finalize_attr('output_params')
+    output_params = Plugable.finalize_attr('output_params')
     has_output_params = tuple()
 
     internal_options = tuple()
@@ -1204,11 +1204,11 @@ class Local(Command):
 
 class Object(HasParam):
     # Create stubs for attributes that are set in _on_finalize()
-    backend = Plugin.finalize_attr('backend')
-    methods = Plugin.finalize_attr('methods')
-    params = Plugin.finalize_attr('params')
-    primary_key = Plugin.finalize_attr('primary_key')
-    params_minus_pk = Plugin.finalize_attr('params_minus_pk')
+    backend = Plugable.finalize_attr('backend')
+    methods = Plugable.finalize_attr('methods')
+    params = Plugable.finalize_attr('params')
+    primary_key = Plugable.finalize_attr('primary_key')
+    params_minus_pk = Plugable.finalize_attr('params_minus_pk')
 
     # Can override in subclasses:
     backend_name = None
@@ -1293,7 +1293,7 @@ class Object(HasParam):
         return json_dict
 
 
-class Attribute(Plugin):
+class Attribute(Plugable):
     """
     Base class implementing the attribute-to-object association.
 
@@ -1433,7 +1433,7 @@ class Method(Attribute, Command):
             yield param
 
 
-class Updater(Plugin):
+class Updater(Plugable):
     """
     An LDAP update with an associated object (always update).
 

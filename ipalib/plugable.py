@@ -120,7 +120,7 @@ class Registry(object):
         return iter(self.__registry.values())
 
 
-class Plugin(ReadOnly):
+class Plugable(ReadOnly):
     """
     Base class for all plugins.
     """
