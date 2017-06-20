@@ -169,13 +169,27 @@ class ClassPlugin(object):
         else:
             return unicode(doc).split('\n\n', 1)[0].strip()
 
+    @property
+    def key(self):
+        return self.full_name
+
+    @property
+    def aux_keys(self):
+        result = frozenset({self.klass})
+
+        result |= {(self.name, self.version)}
+        if self.version == PLUGIN_DEFAULT_VERSIONS.get(self.name, '1'):
+            result |= {self.name}
+
+        return result
+
     def __hash__(self):
-        return hash(self.full_name)
+        return hash(self.key)
 
     def __eq__(self, other):
         api = self.get_api()
         if api is not None and isinstance(other, ClassPlugin):
-            return other.get_api() is api and other.full_name == self.full_name
+            return other.get_api() is api and other.key == self.key
 
         return NotImplemented
 
@@ -730,7 +744,7 @@ class API(ReadOnly):
             )
 
         # Check override:
-        prev = self.__plugins_by_key.get(plugin.full_name)
+        prev = self.__plugins_by_key.get(plugin.key)
         if prev:
             if not override:
                 if no_fail:
@@ -760,11 +774,9 @@ class API(ReadOnly):
         # The plugin is okay, add to sub_d:
         self.__plugins.add(plugin)
         self.__plugins_by_key[plugin] = plugin
-        self.__plugins_by_key[plugin.klass] = plugin
-        self.__plugins_by_key[plugin.name, plugin.version] = plugin
-        self.__plugins_by_key[plugin.full_name] = plugin
-        if plugin.version == PLUGIN_DEFAULT_VERSIONS.get(plugin.name, '1'):
-            self.__plugins_by_key[plugin.name] = plugin
+        self.__plugins_by_key[plugin.key] = plugin
+        for aux_key in plugin.aux_keys:
+            self.__plugins_by_key[aux_key] = plugin
 
     def finalize(self):
         """
