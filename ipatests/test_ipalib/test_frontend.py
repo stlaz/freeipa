@@ -922,7 +922,6 @@ class test_Object(ClassChecker):
                     self.name = '%s_%s' % (obj_name, attr_name)
                 else:
                     self.name = name
-                self.bases = (DummyAttribute,)
                 self.version = '1'
                 self.full_name = '{}/{}'.format(self.name, self.version)
                 self.param = frontend.create_param(attr_name)
@@ -933,6 +932,7 @@ class test_Object(ClassChecker):
                     self.attr_name,
                     getattr(self, attr_name)
                 )
+        DummyAttribute.plugin_type = DummyAttribute
 
         def get_attributes(cnt, format):
             for name in ['other', 'user', 'another']:

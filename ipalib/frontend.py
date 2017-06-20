@@ -1295,7 +1295,13 @@ class Local(Command):
         return self.execute(*args, **options)
 
 
+class ObjectClassPlugin(FrontendClassPlugin):
+    pass
+
+
 class Object(HasParam):
+    plugin_type = ObjectClassPlugin
+
     # Create stubs for attributes that are set in _on_finalize()
     backend = Plugable.finalize_attr('backend')
     methods = Plugable.finalize_attr('methods')

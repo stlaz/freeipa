@@ -140,10 +140,6 @@ class ClassPlugin(object):
         return name
 
     @property
-    def bases(self):
-        return self.klass.__bases__
-
-    @property
     def key(self):
         return self.name
 
@@ -188,10 +184,6 @@ class Plugable(ReadOnly):
     @property
     def name(self):
         return self.api.get_plugin(self.__class__).name
-
-    @property
-    def bases(self):
-        return self.api.get_plugin(self.__class__).bases
 
     @property
     def api(self):
@@ -314,7 +306,7 @@ class APINameSpace(collections.Mapping):
         plugins = self.__plugins = set()
 
         for plugin in self.__api._API__plugins:
-            if any(issubclass(b, self.__base) for b in plugin.bases):
+            if isinstance(plugin, self.__base.plugin_type):
                 plugins.add(plugin)
 
     def __len__(self):
@@ -686,8 +678,8 @@ class API(ReadOnly):
         plugin = plugin_type(klass, self)
 
         # Find the base class or raise SubclassError:
-        for base in plugin.bases:
-            if issubclass(base, self.bases):
+        for base in self.bases:
+            if isinstance(plugin, base.plugin_type):
                 break
         else:
             raise errors.PluginSubclassError(
@@ -749,7 +741,7 @@ class API(ReadOnly):
 
         for base in self.bases:
             for plugin in self.__plugins:
-                if not any(issubclass(b, base) for b in plugin.bases):
+                if not isinstance(plugin, base.plugin_type):
                     continue
                 if not self.env.plugins_on_demand:
                     self._get(plugin)
