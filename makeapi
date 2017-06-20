@@ -40,6 +40,7 @@ from ipalib.parameters import Param
 from ipalib.output import Output
 from ipalib.text import Gettext, NGettext, ConcatenatedLazyText
 from ipalib.capabilities import capabilities
+from ipapython.ipautil import APIVersion
 
 API_FILE='API.txt'
 
@@ -245,6 +246,24 @@ def validate_doc():
 
     return rval
 
+
+def find_newest_plugins():
+    newest_plugins = {}
+
+    for plugin in itertools.chain(api.Command(), api.Object()):
+        newest_plugin = newest_plugins.setdefault(plugin.name, plugin)
+
+        # Technicall plugin.version is not an API version. The
+        # APIVersion class can handle plugin versions. It's more
+        # lean than pkg_resource.parse_version().
+        version = APIVersion(plugin.version)
+        newest_version = APIVersion(newest_plugin.version)
+        if version > newest_version:
+            newest_plugins[plugin.name] = plugin
+
+    return newest_plugins
+
+
 def make_api():
     """
     Write a new API file from the current tree.
@@ -259,14 +278,9 @@ def make_api():
             fd.write('option: %s\n' % param_repr(o))
         for o in sorted(cmd.output(), key=operator.attrgetter('name')):
             fd.write('output: %s\n' % param_repr(o))
-    for plugin in sorted(itertools.chain(api.Command(), api.Object()),
-                         key=operator.attrgetter('full_name')):
-        try:
-            default_plugin = api.Command[plugin.name]
-        except KeyError:
-            default_plugin = api.Object[plugin.name]
-        if plugin is default_plugin:
-            fd.write('default: %s\n' % plugin.full_name)
+    for _name, plugin in sorted(find_newest_plugins(),
+                                key=operator.itemgetter(0)):
+        fd.write('default: %s\n' % plugin.full_name)
     for name, version in sorted(
             capabilities.items(), key=operator.itemgetter(1, 0)):
         fd.write('capability: %s %s\n' % (name, version))
@@ -335,6 +349,8 @@ def validate_api():
     fd = open(API_FILE, 'r')
     lines = fd.readlines()
     fd.close()
+
+    newest_plugins = find_newest_plugins()
 
     rval = 0
 
@@ -447,7 +463,7 @@ def validate_api():
                 rval |= API_FILE_DIFFERENCE
             if default_name is not None:
                 try:
-                    expected_default = namespace[default_name].full_name
+                    expected_default = newest_plugins[default_name].full_name
                 except KeyError:
                     print("Default version of plugin %s in API file not "
                           "found" % default_name)

@@ -783,23 +783,8 @@ class API(ReadOnly):
                     "IPA_CONFDIR env sets confdir to '%s'.", self.env.confdir)
 
         for plugin in self.__plugins:
-            if not self.env.validate_api:
-                if plugin.full_name not in DEFAULT_PLUGINS:
-                    continue
-            else:
-                try:
-                    default_version = self.__default_map[plugin.name]
-                except KeyError:
-                    pass
-                else:
-                    # Technicall plugin.version is not an API version. The
-                    # APIVersion class can handle plugin versions. It's more
-                    # lean than pkg_resource.parse_version().
-                    version = ipautil.APIVersion(plugin.version)
-                    default_version = ipautil.APIVersion(default_version)
-                    if version < default_version:
-                        continue
-            self.__default_map[plugin.name] = plugin.version
+            if plugin.full_name in DEFAULT_PLUGINS:
+                self.__default_map[plugin.name] = plugin.version
 
         production_mode = self.is_production_mode()
 
