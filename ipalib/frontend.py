@@ -478,6 +478,11 @@ class Command(HasParam):
     """
     plugin_type = CommandClassPlugin
 
+    obj_name = None
+    obj_version = None
+    obj_full_name = None
+    obj = None
+
     takes_options = tuple()
     takes_args = tuple()
     # Create stubs for attributes that are set in _on_finalize()
@@ -485,7 +490,6 @@ class Command(HasParam):
     options = Plugable.finalize_attr('options')
     params = Plugable.finalize_attr('params')
     params_by_default = Plugable.finalize_attr('params_by_default')
-    obj = None
 
     use_output_validation = True
     output = Plugable.finalize_attr('output')
@@ -513,6 +517,10 @@ class Command(HasParam):
     @property
     def forwarded_name(self):
         return self.full_name
+
+    @property
+    def attr_name(self):
+        return self.name
 
     def __call__(self, *args, **options):
         """
@@ -1076,6 +1084,11 @@ class Command(HasParam):
                 o.validate(self, value, version)
 
     def get_output_params(self):
+        if self.obj is not None:
+            for param in self.obj.params():
+                if 'no_output' in param.flags:
+                    continue
+                yield param
         for param in self._get_param_iterable('output_params', verb='has'):
             yield param
 
@@ -1296,7 +1309,7 @@ class Object(HasParam):
 
     def _on_finalize(self):
         self.methods = NameSpace(
-            self.__get_attrs('Method'), sort=False, name_attr='attr_name'
+            self.__get_methods(), sort=False, name_attr='attr_name'
         )
         self._create_param_namespace('params')
         pkeys = [p for p in self.params() if p.primary_key]
@@ -1339,11 +1352,8 @@ class Object(HasParam):
         """
         raise NotImplementedError('%s.get_dn()' % self.name)
 
-    def __get_attrs(self, name):
-        if name not in self.api:
-            return
-        namespace = self.api[name]
-        assert type(namespace) is APINameSpace
+    def __get_methods(self):
+        namespace = self.api.Command
         for plugin in namespace(): # Equivalent to dict.itervalues()
             if plugin is not namespace[plugin.name]:
                 continue
@@ -1468,12 +1478,12 @@ class Method(Attribute, Command):
     >>> api.add_plugin(user)
     >>> api.finalize()
 
-    First, the ``user_add`` plugin can be accessed through the ``api.Method``
+    First, the ``user_add`` plugin can be accessed through the ``api.Command``
     namespace:
 
-    >>> list(api.Method)
+    >>> list(api.Command)
     [<class '__main__.user_add'>]
-    >>> api.Method.user_add(version=u'2.88')  # Will call user_add.run()
+    >>> api.Command.user_add(version=u'2.88')  # Will call user_add.run()
     {'result': 'Added the user!'}
 
     (The "version" argument is the API version to use.
@@ -1502,12 +1512,3 @@ class Method(Attribute, Command):
     """
     extra_options_first = False
     extra_args_first = False
-
-    def get_output_params(self):
-        if self.obj is not None:
-            for param in self.obj.params():
-                if 'no_output' in param.flags:
-                    continue
-                yield param
-        for param in super(Method, self).get_output_params():
-            yield param

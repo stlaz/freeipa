@@ -937,7 +937,7 @@ Registry = plugable.Registry
 
 
 class API(plugable.API):
-    bases = (Command, Object, Method, Backend)
+    bases = (Command, Object, Backend)
 
     @property
     def packages(self):
@@ -957,6 +957,10 @@ class API(plugable.API):
             )
 
         return result
+
+    @property
+    def Method(self):
+        return self.Command
 
 
 def create_api(mode='dummy'):

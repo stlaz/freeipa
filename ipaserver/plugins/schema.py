@@ -238,7 +238,7 @@ class command(metaobject):
             else:
                 obj['topic_topic'] = topic['full_name']
 
-        if isinstance(cmd, Method):
+        if cmd.obj is not None:
             obj['obj_class'] = unicode(cmd.obj_full_name)
             obj['attr_name'] = unicode(cmd.attr_name)
 

@@ -92,15 +92,17 @@ class json_metadata(Command):
         try:
             if not methodname:
                 methodname = options['method']
-            if (methodname in self.api.Method and
-                    not isinstance(self.api.Method[methodname], Local)):
-                m = self.api.Method[methodname]
+            if (methodname in self.api.Command and
+                    not isinstance(self.api.Command[methodname], Local) and
+                    self.api.Command[methodname].obj is not None):
+                m = self.api.Command[methodname]
                 methods = dict([(m.name, json_serialize(m))])
             elif methodname == "all":
                 methods = dict(
-                    (m.name, json_serialize(m)) for m in self.api.Method()
-                    if (m is self.api.Method[m.name] and
-                        not isinstance(m, Local))
+                    (m.name, json_serialize(m)) for m in self.api.Command()
+                    if (m is self.api.Command[m.name] and
+                        not isinstance(m, Local) and
+                        m.obj is not None)
                 )
             empty = False
         except KeyError:
@@ -128,9 +130,10 @@ class json_metadata(Command):
                 if o is self.api.Object[o.name]
             )
             methods = dict(
-                (m.name, json_serialize(m)) for m in self.api.Method()
-                if (m is self.api.Method[m.name] and
-                    not isinstance(m, Local))
+                (m.name, json_serialize(m)) for m in self.api.Command()
+                if (m is self.api.Command[m.name] and
+                    not isinstance(m, Local) and
+                    m.obj is not None)
             )
             commands = dict(
                 (c.name, json_serialize(c)) for c in self.api.Command()

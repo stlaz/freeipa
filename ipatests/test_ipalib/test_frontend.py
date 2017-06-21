@@ -946,7 +946,7 @@ class test_Object(ClassChecker):
             def __init__(self):
                 self._API__plugins = get_attributes(cnt, methods_format)
                 self._API__default_map = {}
-                self.Method = plugable.APINameSpace(self, DummyAttribute)
+                self.Command = plugable.APINameSpace(self, DummyAttribute)
             def __contains__(self, key):
                 return hasattr(self, key)
             def __getitem__(self, key):
@@ -956,7 +956,7 @@ class test_Object(ClassChecker):
             def _get(self, plugin):
                 return plugin
         api = FakeAPI()
-        assert len(api.Method) == cnt * 3
+        assert len(api.Command) == cnt * 3
 
         class user(self.cls):
             pass
