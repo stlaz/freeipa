@@ -27,7 +27,6 @@ from ipalib import api, errors
 from ipalib import Flag, Str
 from ipalib.frontend import Command, Method, Object
 from ipalib.plugable import Registry
-from ipalib.util import classproperty
 from ipalib import _
 from ipapython.dn import DN
 
@@ -51,14 +50,17 @@ class _fake_automountlocation_show(Method):
     NO_CLI = True
 
 
-@register(override=True, no_fail=True)
-class automountlocation_tofiles(MethodOverride):
-    @classmethod
-    def __NO_CLI_getter(cls):
+class automountlocation_tofilesPlugin(MethodOverride.plugin_type):
+    @property
+    def NO_CLI(self):
+        api = self.get_api()
         return (api.Command.get_plugin('automountlocation_show').klass is
                 _fake_automountlocation_show)
 
-    NO_CLI = classproperty(__NO_CLI_getter)
+
+@register(override=True, no_fail=True)
+class automountlocation_tofiles(MethodOverride):
+    plugin_type = automountlocation_tofilesPlugin
 
     @property
     def api_version(self):

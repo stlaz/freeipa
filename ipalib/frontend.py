@@ -37,7 +37,7 @@ from ipalib.errors import (ZeroArgumentError, MaxArgumentError, OverlapError,
     ValidationError, ConversionError)
 from ipalib import errors, messages
 from ipalib.request import context, context_frame
-from ipalib.util import classproperty, json_serialize
+from ipalib.util import json_serialize
 
 if six.PY3:
     unicode = str
@@ -370,11 +370,17 @@ class HasParam(Plugable):
 class CommandClassPlugin(plugable.ClassPlugin):
     @property
     def NO_CLI(self):
-        return self.klass.NO_CLI
+        NO_CLI = getattr(self.klass, 'NO_CLI', Command.NO_CLI)
+        if NO_CLI is Command.NO_CLI:
+            NO_CLI = False
+        return NO_CLI
 
     @property
     def topic(self):
-        return self.klass.topic
+        topic = getattr(self.klass, 'topic', Command.topic)
+        if topic is Command.topic:
+            topic = self.klass.__module__.rpartition('.')[2]
+        return topic
 
 
 _callback_registry = {}
@@ -436,11 +442,13 @@ class Command(HasParam):
 
     api_version = API_VERSION
 
-    @classmethod
-    def __topic_getter(cls):
-        return cls.__module__.rpartition('.')[2]
+    @property
+    def NO_CLI(self):
+        return self.api.get_plugin(self.__class__).NO_CLI
 
-    topic = classproperty(__topic_getter)
+    @property
+    def topic(self):
+        return self.api.get_plugin(self.__class__).topic
 
     @property
     def forwarded_name(self):

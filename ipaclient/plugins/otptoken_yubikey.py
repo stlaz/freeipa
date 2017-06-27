@@ -21,11 +21,10 @@ import os
 
 import six
 
-from ipalib import _, api, IntEnum
+from ipalib import _, IntEnum
 from ipalib.errors import NotFound, SkipPluginModule
 from ipalib.frontend import Command, Method, Object
 from ipalib.plugable import Registry
-from ipalib.util import classproperty
 
 try:
     import usb.core
@@ -67,9 +66,19 @@ class _fake_otptoken_add(Method):
     NO_CLI = True
 
 
+class otptoken_add_yubikeyPlugin(Command.plugin_type):
+    @property
+    def NO_CLI(self):
+        api = self.get_api()
+        return (api.Command.get_plugin('otptoken_add').klass is
+                _fake_otptoken_add)
+
+
 @register()
 class otptoken_add_yubikey(Command):
     __doc__ = _('Add a new YubiKey OTP token.')
+
+    plugin_type = otptoken_add_yubikeyPlugin
 
     takes_options = (
         IntEnum('slot?',
@@ -79,13 +88,6 @@ class otptoken_add_yubikey(Command):
         ),
     )
     has_output_params = takes_options
-
-    @classmethod
-    def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('otptoken_add').klass is
-                _fake_otptoken_add)
-
-    NO_CLI = classproperty(__NO_CLI_getter)
 
     @property
     def api_version(self):

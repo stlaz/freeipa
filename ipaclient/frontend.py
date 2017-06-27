@@ -2,11 +2,9 @@
 # Copyright (C) 2016  FreeIPA Contributors see COPYING for license
 #
 
-from ipalib import api
-from ipalib.frontend import Command, Method
+from ipalib.frontend import Command, CommandClassPlugin, Method
 from ipalib.parameters import Str
 from ipalib.text import _
-from ipalib.util import classproperty
 
 
 class ClientCommand(Command):
@@ -109,40 +107,36 @@ class ClientMethod(ClientCommand, Method):
                 yield output_param
 
 
+class CommandOverrideClassPlugin(CommandClassPlugin):
+    @property
+    def next(self):
+        return self.get_api().get_plugin_next(self)
+
+    @property
+    def doc(self):
+        return self.next.doc
+
+    @property
+    def summary(self):
+        return self.next.summary
+
+    @property
+    def NO_CLI(self):
+        return self.next.NO_CLI
+
+    @property
+    def topic(self):
+        return self.next.topic
+
+
 class CommandOverride(Command):
+    plugin_type = CommandOverrideClassPlugin
+
     def __init__(self, api):
         super(CommandOverride, self).__init__(api)
 
-        next_class = self.__get_next()
+        next_class = self.api.get_plugin(self.__class__).next.klass
         self.next = next_class(api)
-
-    @classmethod
-    def __get_next(cls):
-        return api.get_plugin_next(api.get_plugin(cls)).klass
-
-    @classmethod
-    def __doc_getter(cls):
-        return cls.__get_next().doc
-
-    doc = classproperty(__doc_getter)
-
-    @classmethod
-    def __summary_getter(cls):
-        return cls.__get_next().summary
-
-    summary = classproperty(__summary_getter)
-
-    @classmethod
-    def __NO_CLI_getter(cls):
-        return cls.__get_next().NO_CLI
-
-    NO_CLI = classproperty(__NO_CLI_getter)
-
-    @classmethod
-    def __topic_getter(cls):
-        return cls.__get_next().topic
-
-    topic = classproperty(__topic_getter)
 
     @property
     def forwarded_name(self):

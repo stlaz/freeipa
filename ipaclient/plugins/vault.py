@@ -40,8 +40,7 @@ from ipaclient.frontend import MethodOverride
 from ipalib import x509
 from ipalib.constants import USER_CACHE_PATH
 from ipalib.frontend import Local, Method, Object
-from ipalib.util import classproperty
-from ipalib import api, errors
+from ipalib import errors
 from ipalib import Bytes, Flag, Str
 from ipalib.plugable import Registry
 from ipalib import _
@@ -163,9 +162,19 @@ class _fake_vault_add_internal(Method):
     NO_CLI = True
 
 
+class vault_addPlugin(Local.plugin_type):
+    @property
+    def NO_CLI(self):
+        api = self.get_api()
+        return (api.Command.get_plugin('vault_add_internal').klass is
+                _fake_vault_add_internal)
+
+
 @register()
 class vault_add(Local):
     __doc__ = _('Create a new vault.')
+
+    plugin_type = vault_addPlugin
 
     takes_options = (
         Str(
@@ -184,13 +193,6 @@ class vault_add(Local):
             doc=_('File containing the vault public key'),
         ),
     )
-
-    @classmethod
-    def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_add_internal').klass is
-                _fake_vault_add_internal)
-
-    NO_CLI = classproperty(__NO_CLI_getter)
 
     @property
     def api_version(self):
@@ -350,9 +352,19 @@ class _fake_vault_mod_internal(Method):
     NO_CLI = True
 
 
+class vault_modPlugin(Local.plugin_type):
+    @property
+    def NO_CLI(self):
+        api = self.get_api()
+        return (api.Command.get_plugin('vault_mod_internal').klass is
+                _fake_vault_add_internal)
+
+
 @register()
 class vault_mod(Local):
     __doc__ = _('Modify a vault.')
+
+    plugin_type = vault_modPlugin
 
     takes_options = (
         Flag(
@@ -395,13 +407,6 @@ class vault_mod(Local):
             doc=_('File containing the new vault public key'),
         ),
     )
-
-    @classmethod
-    def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_mod_internal').klass is
-                _fake_vault_mod_internal)
-
-    NO_CLI = classproperty(__NO_CLI_getter)
 
     @property
     def api_version(self):
@@ -696,9 +701,19 @@ class _fake_vault_archive_internal(Method):
     NO_CLI = True
 
 
+class vault_archivePlugin(ModVaultData.plugin_type):
+    @property
+    def NO_CLI(self):
+        api = self.get_api()
+        return (api.Command.get_plugin('vault_archive_internal').klass is
+                _fake_vault_add_internal)
+
+
 @register()
 class vault_archive(ModVaultData):
     __doc__ = _('Archive data into a vault.')
+
+    plugin_type = vault_archivePlugin
 
     takes_options = (
         Bytes(
@@ -724,13 +739,6 @@ class vault_archive(ModVaultData):
             doc=_('Override existing password'),
         ),
     )
-
-    @classmethod
-    def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_archive_internal').klass is
-                _fake_vault_archive_internal)
-
-    NO_CLI = classproperty(__NO_CLI_getter)
 
     @property
     def api_version(self):
@@ -933,9 +941,19 @@ class _fake_vault_retrieve_internal(Method):
     NO_CLI = True
 
 
+class vault_retrievePlugin(Local.plugin_type):
+    @property
+    def NO_CLI(self):
+        api = self.get_api()
+        return (api.Command.get_plugin('vault_retrieve_internal').klass is
+                _fake_vault_add_internal)
+
+
 @register()
 class vault_retrieve(ModVaultData):
     __doc__ = _('Retrieve a data from a vault.')
+
+    plugin_type = vault_retrievePlugin
 
     takes_options = (
         Str(
@@ -970,13 +988,6 @@ class vault_retrieve(ModVaultData):
             label=_('Data'),
         ),
     )
-
-    @classmethod
-    def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('vault_retrieve_internal').klass is
-                _fake_vault_retrieve_internal)
-
-    NO_CLI = classproperty(__NO_CLI_getter)
 
     @property
     def api_version(self):

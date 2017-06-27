@@ -40,7 +40,6 @@ import six
 from ipalib import errors
 from ipalib.config import Env
 from ipalib.text import _
-from ipalib.util import classproperty
 from ipalib.base import ReadOnly, lock, islocked
 from ipalib.constants import DEFAULT_CONFIG
 from ipapython import ipautil
@@ -135,27 +134,40 @@ class ClassPlugin(object):
 
     @property
     def name(self):
-        return self.klass.name
+        name = getattr(self.klass, 'name', Plugable.name)
+        if name is Plugable.name:
+            name = self.klass.__name__
+        return name
 
     @property
     def version(self):
-        return self.klass.version
+        version = getattr(self.klass, 'version', Plugable.version)
+        if version is Plugable.version:
+            version = '1'
+        return version
 
     @property
     def full_name(self):
-        return self.klass.full_name
+        return '{}/{}'.format(self.name, self.version)
 
     @property
     def bases(self):
-        return self.klass.bases
+        return self.klass.__bases__
 
     @property
     def doc(self):
-        return self.klass.doc
+        doc = getattr(self.klass, 'doc', Plugable.doc)
+        if doc is Plugable.doc:
+            doc = self.klass.__doc__
+        return doc
 
     @property
     def summary(self):
-        return self.klass.summary
+        doc = self.doc
+        if not _(doc).msg:
+            return u'<%s.%s>' % (self.klass.__module__, self.klass.__name__)
+        else:
+            return unicode(doc).split('\n\n', 1)[0].strip()
 
     def __hash__(self):
         return hash(self.full_name)
@@ -183,8 +195,6 @@ class Plugable(ReadOnly):
     Base class for all plugins.
     """
 
-    version = '1'
-
     def __init__(self, api):
         assert api is not None
         self.__api = api
@@ -193,40 +203,29 @@ class Plugable(ReadOnly):
         self.__finalize_lock = threading.RLock()
         log_mgr.get_logger(self, True)
 
-    @classmethod
-    def __name_getter(cls):
-        return cls.__name__
+    @property
+    def name(self):
+        return self.api.get_plugin(self.__class__).name
 
-    # you know nothing, pylint
-    name = classproperty(__name_getter)
+    @property
+    def version(self):
+        return self.api.get_plugin(self.__class__).version
 
-    @classmethod
-    def __full_name_getter(cls):
-        return '{}/{}'.format(cls.name, cls.version)
+    @property
+    def full_name(self):
+        return self.api.get_plugin(self.__class__).full_name
 
-    full_name = classproperty(__full_name_getter)
+    @property
+    def bases(self):
+        return self.api.get_plugin(self.__class__).bases
 
-    @classmethod
-    def __bases_getter(cls):
-        return cls.__bases__
+    @property
+    def doc(self):
+        return self.api.get_plugin(self.__class__).doc
 
-    bases = classproperty(__bases_getter)
-
-    @classmethod
-    def __doc_getter(cls):
-        return cls.__doc__
-
-    doc = classproperty(__doc_getter)
-
-    @classmethod
-    def __summary_getter(cls):
-        doc = cls.doc
-        if not _(doc).msg:
-            return u'<%s.%s>' % (cls.__module__, cls.__name__)
-        else:
-            return unicode(doc).split('\n\n', 1)[0].strip()
-
-    summary = classproperty(__summary_getter)
+    @property
+    def summary(self):
+        return self.api.get_plugin(self.__class__).summary
 
     @property
     def api(self):
