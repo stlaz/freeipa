@@ -48,7 +48,7 @@ from ipapython.ipa_log_manager import (
     log_mgr,
     LOGGING_FORMAT_FILE,
     LOGGING_FORMAT_STDERR)
-from ipapython.version import VERSION, API_VERSION, DEFAULT_PLUGINS
+from ipapython.version import VERSION, API_VERSION, PLUGIN_DEFAULT_VERSIONS
 
 if six.PY3:
     unicode = str
@@ -341,44 +341,40 @@ class APINameSpace(collections.Mapping):
         self.__api = api
         self.__base = base
         self.__plugins = None
-        self.__plugins_by_key = None
 
     def __enumerate(self):
-        if self.__plugins is not None and self.__plugins_by_key is not None:
+        if self.__plugins is not None:
             return
 
-        default_map = self.__api._API__default_map
-        plugins = set()
-        key_dict = self.__plugins_by_key = {}
+        plugins = self.__plugins = set()
 
         for plugin in self.__api._API__plugins:
-            if not any(issubclass(b, self.__base) for b in plugin.bases):
-                continue
-            plugins.add(plugin)
-            key_dict[plugin] = plugin
-            key_dict[plugin.klass] = plugin
-            key_dict[plugin.name, plugin.version] = plugin
-            key_dict[plugin.full_name] = plugin
-            if plugin.version == default_map.get(plugin.name, '1'):
-                key_dict[plugin.name] = plugin
-
-        self.__plugins = sorted(plugins, key=operator.attrgetter('full_name'))
+            if any(issubclass(b, self.__base) for b in plugin.bases):
+                plugins.add(plugin)
 
     def __len__(self):
         self.__enumerate()
         return len(self.__plugins)
 
-    def __contains__(self, key):
-        self.__enumerate()
-        return key in self.__plugins_by_key
-
     def __iter__(self):
         self.__enumerate()
-        return iter(self.__plugins)
+        plugins = sorted(self.__plugins, key=operator.attrgetter('full_name'))
+        return iter(plugins)
 
     def get_plugin(self, key):
         self.__enumerate()
-        return self.__plugins_by_key[key]
+        plugin = self.__api.get_plugin(key)
+        if plugin not in self.__plugins:
+            raise KeyError(key)
+        return plugin
+
+    def __contains__(self, key):
+        try:
+            self.get_plugin(key)
+        except KeyError:
+            return False
+        else:
+            return True
 
     def __getitem__(self, key):
         plugin = self.get_plugin(key)
@@ -404,7 +400,6 @@ class API(ReadOnly):
         self.register = Registry()
         self.__plugins = set()
         self.__plugins_by_key = {}
-        self.__default_map = {}
         self.__instances = {}
         self.__next = {}
         self.__done = set()
@@ -765,7 +760,12 @@ class API(ReadOnly):
 
         # The plugin is okay, add to sub_d:
         self.__plugins.add(plugin)
+        self.__plugins_by_key[plugin] = plugin
+        self.__plugins_by_key[plugin.klass] = plugin
+        self.__plugins_by_key[plugin.name, plugin.version] = plugin
         self.__plugins_by_key[plugin.full_name] = plugin
+        if plugin.version == PLUGIN_DEFAULT_VERSIONS.get(plugin.name, '1'):
+            self.__plugins_by_key[plugin.name] = plugin
 
     def finalize(self):
         """
@@ -781,10 +781,6 @@ class API(ReadOnly):
             if self.env.env_confdir == self.env.confdir:
                 self.log.info(
                     "IPA_CONFDIR env sets confdir to '%s'.", self.env.confdir)
-
-        for plugin in self.__plugins:
-            if plugin.full_name in DEFAULT_PLUGINS:
-                self.__default_map[plugin.name] = plugin.version
 
         production_mode = self.is_production_mode()
 
@@ -812,6 +808,9 @@ class API(ReadOnly):
 
         if not production_mode:
             lock(self)
+
+    def get_plugin(self, key):
+        return self.__plugins_by_key[key]
 
     def _get(self, plugin):
         if plugin not in self.__plugins:

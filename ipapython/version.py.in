@@ -48,6 +48,6 @@ NUM_VERSION=@NUM_VERSION@
 API_VERSION=u'@API_VERSION@'
 
 
-DEFAULT_PLUGINS = frozenset(l.strip() for l in """
+PLUGIN_DEFAULT_VERSIONS = dict(l.strip().split('/') for l in """
 @DEFAULT_PLUGINS@
 """.strip().splitlines())

@@ -118,7 +118,7 @@ class CommandOverride(Command):
 
     @classmethod
     def __get_next(cls):
-        return api.get_plugin_next(api.Command.get_plugin(cls)).klass
+        return api.get_plugin_next(api.get_plugin(cls)).klass
 
     @classmethod
     def __doc_getter(cls):
