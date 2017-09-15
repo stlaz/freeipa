@@ -10,6 +10,11 @@ services:
     - docker
 python:
     - "3.6"
+branches:
+    only:
+        - master
+        - travis_f27
+        - travis_rawhide
 cache: pip
 env:
     global:
