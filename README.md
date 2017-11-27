@@ -1,3 +1,8 @@
+| Fedora 28 | Fedora 28 | Fedora Rawhide |
+|:---:|:---:|:---:|
+| [![Fedora 28](https://travis-ci.org/stlaz/freeipa.svg?branch=master)](https://travis-ci.org/stlaz/freeipa)  | [![Fedora 28](https://travis-ci.org/stlaz/freeipa.svg?branch=travis_f28)](https://travis-ci.org/stlaz/freeipa)   | [![Rawhide](https://travis-ci.org/stlaz/freeipa.svg?branch=travis_rawhide)](https://travis-ci.org/stlaz/freeipa)   |
+
+
 # FreeIPA Server
 
 FreeIPA allows Linux administrators to centrally manage identity,
