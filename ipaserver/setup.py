@@ -63,6 +63,7 @@ if __name__ == '__main__':
             "six",
             "python-augeas",
             "python-ldap",
+            "lib389"
         ],
         entry_points={
             'custodia.authorizers': [

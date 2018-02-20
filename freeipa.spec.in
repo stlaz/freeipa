@@ -58,7 +58,6 @@
 %global selinux_policy_version 3.12.1-153
 %global slapi_nis_version 0.56.0-4
 %global python2_ldap_version 2.4.15
-%global ds_version 1.3.7.9-1
 %else
 # 1.15.1-7: certauth (http://krbdev.mit.edu/rt/Ticket/Display.html?id=8561)
 %global krb5_version 1.15.1-7
@@ -82,15 +81,6 @@
 %global python3_ldap_version 2.4.35.1-2
 %endif
 
-%if 0%{?fedora} >= 28
-# Fix for "Crash when failing to read from SASL connection"
-# https://pagure.io/389-ds-base/issue/49639
-%global ds_version 1.4.0.8-1
-%else
-# 1.3.7.9-1: https://bugzilla.redhat.com/show_bug.cgi?id=1459946
-#            https://bugzilla.redhat.com/show_bug.cgi?id=1511462
-#            https://bugzilla.redhat.com/show_bug.cgi?id=1514033
-%global ds_version 1.3.7.9-1
 %endif
 
 %endif
@@ -98,6 +88,10 @@
 # Require Dogtag PKI 10.6.1 with Python 3 and SQL NSSDB fixes for external
 # CA support, https://bugzilla.redhat.com/show_bug.cgi?id=1573094
 %global pki_version 10.6.1
+
+# Fix for "Crash when failing to read from SASL connection"
+# https://pagure.io/389-ds-base/issue/49639
+%global ds_version 1.4.0.8-1
 
 # NSS release with fix for CKA_LABEL import bug in shared SQL database.
 # https://bugzilla.redhat.com/show_bug.cgi?id=1568271
@@ -438,6 +432,7 @@ Requires: python2-lxml
 Requires: python2-gssapi >= 1.2.0-5
 Requires: python2-sssdconfig
 Requires: python2-pyasn1 >= 0.3.2-2
+Requires: python2-lib389
 %if 0%{?fedora} >= 28
 BuildRequires:  python2-dbus
 %else
@@ -481,6 +476,7 @@ Requires: python3-kdcproxy >= 0.3
 Requires: python3-augeas
 Requires: rpm-libs
 Requires: python3-pki >= %{pki_version}
+Requires: python3-lib389
 
 %description -n python3-ipaserver
 IPA is an integrated solution to provide centrally managed Identity (users,
