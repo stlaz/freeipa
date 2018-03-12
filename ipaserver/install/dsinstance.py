@@ -113,6 +113,8 @@ def remove_ds_instance(serverid):
     # Alloc the local instance by name (no creds needed!)
     ds = DirSrv(verbose=True, external_log=logger)
     ds.local_simple_allocate(serverid)
+    # FIXME: workaround for ds.local_simple_allocate() not setting ds.serverid
+    setattr(ds, 'serverid', serverid)
 
     # Remove it
     lib389_remove_ds(ds)
