@@ -844,7 +844,7 @@ find \
 export PYTHON=%{__python2}
 pushd %{_builddir}/freeipa-%{version}-python2
 %configure --with-vendor-suffix=-%{release} \
-           %{enable_server_option} \
+           --disable-server \
            %{with_ipatests_option} \
            %{linter_options}
 popd
@@ -868,7 +868,7 @@ make %{?_smp_mflags} check VERBOSE=yes LIBDIR=%{_libdir}
 # Python2/3 versions at the same time so we need to rename them. Yuck.
 
 %if 0%{?with_python2}
-pushd %{_builddir}/freeipa-%{version}-python3
+pushd %{_builddir}/freeipa-%{version}-python2
 %{__make} python_install DESTDIR=%{?buildroot} INSTALL="%{__install} -p"
 popd
 
